@@ -1,5 +1,33 @@
+<<<<<<< HEAD
 node_modules/
 .env
 .env.local
-.DS_Store
+.env.*.local
 npm-debug.log*
+.DS_Store
+
+backend/node_modules/
+backend/.env
+backend/.env.local
+
+laptop-client/**/bin/
+laptop-client/**/obj/
+
+deploy/backend/node_modules/
+=======
+node_modules/
+.env
+.env.local
+.env.*.local
+npm-debug.log*
+.DS_Store
+
+backend/node_modules/
+backend/.env
+backend/.env.local
+
+laptop-client/**/bin/
+laptop-client/**/obj/
+
+deploy/backend/node_modules/
+>>>>>>> b9e50a1 (Initial Project X deployment ready - backend, web, and Render config)
