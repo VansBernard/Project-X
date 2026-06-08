@@ -4,16 +4,16 @@ import crypto from 'crypto';
 import { fileURLToPath } from 'url';
 import path from 'path';
 import pool from './db.js';
-import { formatPaystackAmount, generateReleaseToken, generateTimeToken } from './utils/timeToken.js';
-import logger from './utils/logger.js';
-import { sendReleaseTokenEmail, sendUnlockTokenEmail } from './utils/notifications.js';
-import { normalizeString, validateDeviceRegistration, isValidPaystackSignature } from './utils/validation.js';
+import { formatPaystackAmount, generateReleaseToken, generateTimeToken } from './timeToken.js';
+import logger from './logger.js';
+import { sendReleaseTokenEmail, sendUnlockTokenEmail } from './notifications.js';
+import { normalizeString, validateDeviceRegistration, isValidPaystackSignature } from './validation.js';
 
 dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const webDir = path.resolve(__dirname, '..', 'Web');
+const webDir = path.resolve(__dirname);
 
 const app = express();
 app.use(express.json({ verify: (req, res, buf) => { req.rawBody = buf } }));
