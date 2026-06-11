@@ -1,0 +1,47 @@
+name: Laptop Client Release
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  publish:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore dependencies
+        run: dotnet restore "laptop-client\LockScreenApp\LockScreenApp.csproj"
+
+      - name: Install WiX Toolset
+        run: choco install wixtoolset --no-progress --yes
+
+      - name: Create signing certificate file
+        if: secrets.SIGNING_CERTIFICATE_PFX != ''
+        run: |
+          $certPath = "$env:GITHUB_WORKSPACE\laptop-client\installer\signing.pfx"
+          [IO.File]::WriteAllBytes($certPath, [Convert]::FromBase64String("${{ secrets.SIGNING_CERTIFICATE_PFX }}"))
+          echo "SIGNING_CERT_PATH=$certPath" | Out-File -FilePath "$env:GITHUB_ENV" -Encoding utf8
+
+      - name: Build MSI installer
+        run: |
+          pwsh -NoProfile -ExecutionPolicy Bypass .\laptop-client\build-installer.ps1 -Sign -SignCertificatePath "$env:SIGNING_CERT_PATH" -SignCertificatePassword "${{ secrets.SIGNING_CERTIFICATE_PASSWORD }}"
+
+      - name: Validate installer
+        run: |
+          pwsh -NoProfile -ExecutionPolicy Bypass .\laptop-client\installer\validate-installer.ps1 -MsiPath "$PWD\laptop-client\installer\ProjectX-LaptopClient.msi"
+
+      - name: Upload MSI to release
+        uses: actions/upload-release-asset@v3
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: laptop-client\installer\ProjectX-LaptopClient.msi
+          asset_name: ProjectX-LaptopClient-${{ github.event.release.tag_name }}.msi
+          asset_content_type: application/x-msi

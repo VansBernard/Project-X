@@ -1,11 +1,15 @@
+using System;
+using System.Diagnostics;
 using System.IO;
 using System.Net.Http;
 using System.Net.Http.Json;
+using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
+using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Media.Imaging;
@@ -19,10 +23,149 @@ namespace LockScreenApp
         private static readonly Regex DigitsOnly = new("^[0-9]+$", RegexOptions.Compiled);
         private static readonly HttpClient HttpClient = new();
         private bool _canClose;
+        private IntPtr _keyboardHook = IntPtr.Zero;
+        private LowLevelKeyboardProc? _keyboardProc;
 
         public MainWindow()
         {
             InitializeComponent();
+            LoadEnvironmentVariables();
+        }
+
+        protected override void OnSourceInitialized(EventArgs e)
+        {
+            base.OnSourceInitialized(e);
+            _keyboardProc = HookCallback;
+            _keyboardHook = SetWindowsHookEx(WH_KEYBOARD_LL, _keyboardProc, GetModuleHandle(Process.GetCurrentProcess().MainModule?.ModuleName ?? string.Empty), 0);
+        }
+
+        private delegate IntPtr LowLevelKeyboardProc(int nCode, IntPtr wParam, IntPtr lParam);
+
+        private const int WH_KEYBOARD_LL = 13;
+        private const int WM_KEYDOWN = 0x0100;
+        private const int WM_SYSKEYDOWN = 0x0104;
+        private const int VK_TAB = 0x09;
+        private const int VK_ESCAPE = 0x1B;
+        private const int VK_F4 = 0x73;
+        private const int VK_LWIN = 0x5B;
+        private const int VK_RWIN = 0x5C;
+        private const int VK_CONTROL = 0x11;
+        private const int VK_MENU = 0x12;
+
+        [DllImport("user32.dll", SetLastError = true)]
+        private static extern IntPtr SetWindowsHookEx(int idHook, LowLevelKeyboardProc lpfn, IntPtr hMod, uint dwThreadId);
+
+        [DllImport("user32.dll", SetLastError = true)]
+        private static extern bool UnhookWindowsHookEx(IntPtr hhk);
+
+        [DllImport("user32.dll", SetLastError = true)]
+        private static extern IntPtr CallNextHookEx(IntPtr hhk, int nCode, IntPtr wParam, IntPtr lParam);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern IntPtr GetModuleHandle(string lpModuleName);
+
+        [DllImport("user32.dll")]
+        private static extern short GetAsyncKeyState(int vKey);
+
+        private static bool IsModifierDown(int vk)
+        {
+            return (GetAsyncKeyState(vk) & 0x8000) != 0;
+        }
+
+        private IntPtr HookCallback(int nCode, IntPtr wParam, IntPtr lParam)
+        {
+            if (nCode >= 0 && (wParam == (IntPtr)WM_KEYDOWN || wParam == (IntPtr)WM_SYSKEYDOWN))
+            {
+                var vkCode = Marshal.ReadInt32(lParam);
+                if (PaymentPanel.Visibility == Visibility.Visible)
+                {
+                    var altDown = IsModifierDown(VK_MENU);
+                    var ctrlDown = IsModifierDown(VK_CONTROL);
+
+                    if (vkCode == VK_LWIN || vkCode == VK_RWIN)
+                        return (IntPtr)1;
+
+                    if (vkCode == VK_TAB && altDown)
+                        return (IntPtr)1;
+
+                    if (vkCode == VK_F4 && altDown)
+                        return (IntPtr)1;
+
+                    if (vkCode == VK_ESCAPE && ctrlDown)
+                        return (IntPtr)1;
+                }
+            }
+
+            return CallNextHookEx(_keyboardHook, nCode, wParam, lParam);
+        }
+
+        private void Window_Closed(object? sender, EventArgs e)
+        {
+            if (_keyboardHook != IntPtr.Zero)
+            {
+                UnhookWindowsHookEx(_keyboardHook);
+                _keyboardHook = IntPtr.Zero;
+            }
+        }
+
+        private static void LoadEnvironmentVariables()
+        {
+            var useEnvFile = string.Equals(
+                Environment.GetEnvironmentVariable("PROJECTX_USE_ENV_FILE"),
+                "true",
+                StringComparison.OrdinalIgnoreCase);
+
+            if (!useEnvFile)
+            {
+                return;
+            }
+
+            var envPath = FindDotEnvPath(Path.GetDirectoryName(typeof(MainWindow).Assembly.Location) ?? ".");
+            if (envPath == null)
+            {
+                envPath = FindDotEnvPath(Environment.CurrentDirectory);
+            }
+
+            if (envPath == null)
+            {
+                ClientLogger.LogWarning("PROJECTX_USE_ENV_FILE is enabled but no .env file was found.");
+                return;
+            }
+
+            ClientLogger.LogInfo($"Loading environment variables from {envPath}");
+
+            foreach (var line in File.ReadLines(envPath))
+            {
+                var trimmed = line.Trim();
+                if (string.IsNullOrWhiteSpace(trimmed) || trimmed.StartsWith("#"))
+                    continue;
+
+                var parts = trimmed.Split('=', 2);
+                if (parts.Length == 2)
+                {
+                    var key = parts[0].Trim();
+                    var value = parts[1].Trim().Trim('"');
+                    if (!string.IsNullOrWhiteSpace(key) && Environment.GetEnvironmentVariable(key) == null)
+                    {
+                        Environment.SetEnvironmentVariable(key, value);
+                    }
+                }
+            }
+        }
+
+        private static string? FindDotEnvPath(string startDirectory)
+        {
+            var directory = new DirectoryInfo(startDirectory);
+            while (directory != null)
+            {
+                var candidate = Path.Combine(directory.FullName, ".env");
+                if (File.Exists(candidate))
+                    return candidate;
+
+                directory = directory.Parent;
+            }
+
+            return null;
         }
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
@@ -31,7 +174,8 @@ namespace LockScreenApp
             Focus();
 
             DeviceAddressText.Text = HardwareFingerprint.GetDeviceAddress();
-            PaymentUrlText.Text = Environment.GetEnvironmentVariable("PAYMENT_URL") ?? "https://pay.projectx.com";
+            var defaultPaymentUrl = Environment.GetEnvironmentVariable("PAYMENT_URL") ?? "https://project-x-kg81.onrender.com";
+            PaymentUrlText.Text = RegistrationStore.GetPaymentUrl() ?? defaultPaymentUrl;
             CodePanel.Visibility = Visibility.Collapsed;
 
             if (RegistrationStore.IsRegistered())
@@ -76,6 +220,26 @@ namespace LockScreenApp
             }
         }
 
+        private void Window_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            if (PaymentPanel.Visibility == Visibility.Visible)
+            {
+                if (e.Key == Key.System || e.Key == Key.F4 || e.Key == Key.Escape)
+                {
+                    e.Handled = true;
+                }
+            }
+        }
+
+        private void Window_Deactivated(object sender, EventArgs e)
+        {
+            if (PaymentPanel.Visibility == Visibility.Visible)
+            {
+                Activate();
+                Topmost = true;
+            }
+        }
+
         private void CodeInput_PreviewTextInput(object sender, TextCompositionEventArgs e)
         {
             e.Handled = !DigitsOnly.IsMatch(e.Text);
@@ -100,6 +264,12 @@ namespace LockScreenApp
         {
             CodePanel.Visibility = Visibility.Visible;
             CodeInput.Focus();
+        }
+
+        private void RegistrationCloseButton_Click(object sender, RoutedEventArgs e)
+        {
+            _canClose = true;
+            Close();
         }
 
         private void CopyPaymentLinkButton_Click(object sender, RoutedEventArgs e)
@@ -242,7 +412,7 @@ namespace LockScreenApp
 
             var hardwareUuid = HardwareFingerprint.GetHardwareUuid();
             var deviceAddress = HardwareFingerprint.GetDeviceAddress();
-            var backendUrl = Environment.GetEnvironmentVariable("BACKEND_URL") ?? "http://localhost:3000";
+            var backendUrl = Environment.GetEnvironmentVariable("BACKEND_URL") ?? "https://project-x-kg81.onrender.com";
             var request = new
             {
                 hardwareUuid,
@@ -275,7 +445,7 @@ namespace LockScreenApp
                     return;
                 }
 
-                RegistrationStore.MarkRegistered();
+                RegistrationStore.MarkRegistered(registrationResult.paymentUrl);
                 PaymentUrlText.Text = registrationResult.paymentUrl;
                 UpdatePaymentQr(registrationResult.paymentUrl);
                 RegistrationPanel.Visibility = Visibility.Collapsed;
@@ -285,20 +455,23 @@ namespace LockScreenApp
                 RegistrationMessageText.Text = "Registration successful. Open the payment link on your phone and enter the unlock code once received.";
                 ShowPopupMessage("Registration successful. Open the payment link on your phone.", Brushes.SeaGreen);
             }
-            catch (HttpRequestException)
+            catch (HttpRequestException ex)
             {
                 RegistrationMessageText.Text = $"No internet connection or backend unavailable. Check your network and try again.";
                 ShowPopupMessage("No internet connection or backend unavailable.", Brushes.OrangeRed);
+                ClientLogger.LogError("Registration request failed.", ex);
             }
-            catch (System.Text.Json.JsonException)
+            catch (System.Text.Json.JsonException ex)
             {
                 RegistrationMessageText.Text = "Registration failed: received an invalid response from the backend.";
                 ShowPopupMessage("Registration failed: invalid server response.", Brushes.OrangeRed);
+                ClientLogger.LogError("Failed to parse registration response.", ex);
             }
             catch (Exception ex)
             {
                 RegistrationMessageText.Text = $"Registration failed: {ex.Message}";
                 ShowPopupMessage($"Registration failed: {ex.Message}", Brushes.OrangeRed);
+                ClientLogger.LogError("Registration failed with unexpected error.", ex);
             }
         }
 
@@ -347,11 +520,13 @@ namespace LockScreenApp
             }
 
             var secret = Environment.GetEnvironmentVariable("TOKEN_SECRET");
-            if (string.IsNullOrWhiteSpace(secret))
+            var publicKey = Environment.GetEnvironmentVariable("TOKEN_PUBLIC_KEY");
+            if (string.IsNullOrWhiteSpace(secret) && string.IsNullOrWhiteSpace(publicKey))
             {
                 var text = "Unlock service is not configured.";
                 MessageText.Text = text;
                 ShowPopupMessage(text, Brushes.OrangeRed);
+                ClientLogger.LogError("TOKEN_SECRET and TOKEN_PUBLIC_KEY are both missing.");
                 return;
             }
 
@@ -359,8 +534,20 @@ namespace LockScreenApp
             {
                 var hardwareUuid = HardwareFingerprint.GetHardwareUuid();
                 var now = DateTime.UtcNow;
-                var isReleaseCode = OfflineToken.VerifyRelease(code, hardwareUuid, secret);
-                var isValid = isReleaseCode || OfflineToken.Verify(code, hardwareUuid, now.Year, now.Month, secret);
+                var isReleaseCode = false;
+                var isValid = false;
+
+                if (!string.IsNullOrWhiteSpace(publicKey))
+                {
+                    isReleaseCode = OfflineToken.VerifyReleaseWithPublicKey(code, hardwareUuid, publicKey);
+                    isValid = isReleaseCode || OfflineToken.VerifyWithPublicKey(code, hardwareUuid, now.Year, now.Month, publicKey);
+                }
+
+                if (!isValid && !string.IsNullOrWhiteSpace(secret))
+                {
+                    isReleaseCode = OfflineToken.VerifyRelease(code, hardwareUuid, secret);
+                    isValid = isReleaseCode || OfflineToken.Verify(code, hardwareUuid, now.Year, now.Month, secret);
+                }
 
                 if (isReleaseCode)
                 {
@@ -368,11 +555,19 @@ namespace LockScreenApp
                 }
                 else if (!isValid)
                 {
-                    var nextMonth = now.AddMonths(1);
-                    isValid = OfflineToken.Verify(code, hardwareUuid, nextMonth.Year, nextMonth.Month, secret);
-                    if (isValid)
+                    if (!string.IsNullOrWhiteSpace(publicKey))
                     {
-                        DeadlineStore.SetDeadline(new DateOnly(nextMonth.Year, nextMonth.Month, DateTime.DaysInMonth(nextMonth.Year, nextMonth.Month)));
+                        isValid = OfflineToken.VerifyWithPublicKey(code, hardwareUuid, now.AddMonths(1).Year, now.AddMonths(1).Month, publicKey);
+                    }
+
+                    if (!isValid && !string.IsNullOrWhiteSpace(secret))
+                    {
+                        var nextMonth = now.AddMonths(1);
+                        isValid = OfflineToken.Verify(code, hardwareUuid, nextMonth.Year, nextMonth.Month, secret);
+                        if (isValid)
+                        {
+                            DeadlineStore.SetDeadline(new DateOnly(nextMonth.Year, nextMonth.Month, DateTime.DaysInMonth(nextMonth.Year, nextMonth.Month)));
+                        }
                     }
                 }
                 else
@@ -393,9 +588,10 @@ namespace LockScreenApp
                 _canClose = true;
                 Application.Current.Shutdown(0);
             }
-            catch
+            catch (Exception ex)
             {
                 MessageText.Text = "Could not verify this device.";
+                ClientLogger.LogError("Unlock verification failed.", ex);
             }
         }
     }

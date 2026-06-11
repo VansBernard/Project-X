@@ -3,17 +3,19 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Project X"
         WindowStyle="None"
-        WindowState="Normal"
+        WindowState="Maximized"
         WindowStartupLocation="CenterScreen"
-        Width="1300"
-        Height="860"
         ResizeMode="NoResize"
         Topmost="True"
+        ShowInTaskbar="False"
         Background="#111827"
         Foreground="#F9FAFB"
         Closing="Window_Closing"
+        Closed="Window_Closed"
+        Deactivated="Window_Deactivated"
         Loaded="Window_Loaded"
-        KeyDown="Window_KeyDown">
+        KeyDown="Window_KeyDown"
+        PreviewKeyDown="Window_PreviewKeyDown">
   <Grid>
     <Grid.RowDefinitions>
       <RowDefinition Height="*" />
@@ -32,20 +34,40 @@
             CornerRadius="16">
       <StackPanel>
         <StackPanel x:Name="RegistrationPanel" Visibility="Visible">
-          <StackPanel Margin="0,0,0,24">
-            <TextBlock Text="PROJECT X"
-                       FontSize="36"
-                       FontWeight="Bold"
-                       TextAlignment="Center"
-                       Foreground="#111827"
-                       Margin="0,0,0,8" />
-            <TextBlock Text="Please provide your details to register this device."
-                       FontSize="16"
-                       Foreground="#6B7280"
-                       TextAlignment="Center"
-                       TextWrapping="Wrap"
-                       Margin="0,0,0,0" />
-          </StackPanel>
+          <Grid Margin="0,0,0,24">
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="*" />
+              <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <StackPanel Grid.Column="0">
+              <TextBlock Text="PROJECT X"
+                         FontSize="36"
+                         FontWeight="Bold"
+                         Foreground="#111827"
+                         Margin="0,0,0,8" />
+              <TextBlock Text="Please provide your details to register this device."
+                         FontSize="16"
+                         Foreground="#6B7280"
+                         TextWrapping="Wrap"
+                         Margin="0,0,0,0" />
+            </StackPanel>
+
+            <Button Grid.Column="1"
+                    Width="36"
+                    Height="36"
+                    Margin="12,0,0,0"
+                    HorizontalAlignment="Right"
+                    VerticalAlignment="Top"
+                    Content="✕"
+                    FontSize="18"
+                    FontWeight="Bold"
+                    Background="Transparent"
+                    Foreground="#6B7280"
+                    BorderBrush="#D1D5DB"
+                    BorderThickness="1"
+                    Click="RegistrationCloseButton_Click" />
+          </Grid>
 
           <Grid>
             <Grid.ColumnDefinitions>

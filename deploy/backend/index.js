@@ -263,6 +263,39 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+// Diagnostic endpoint to test device address generation
+app.post('/api/v1/debug/device-address', (req, res) => {
+  const { hardwareUuid, deviceAddress: providedDeviceAddress } = req.body;
+
+  if (!hardwareUuid) {
+    return res.status(400).json({ error: 'hardwareUuid is required' });
+  }
+
+  try {
+    const generatedAddress = generateDeviceAddress(hardwareUuid);
+    const providedAddress = providedDeviceAddress || generatedAddress;
+    const matches = generatedAddress === providedAddress;
+
+    res.json({
+      hardwareUuid: hardwareUuid.substring(0, 8) + '...', // Masked for security
+      generatedDeviceAddress: generatedAddress,
+      providedDeviceAddress: providedAddress || '(none - would be auto-generated)',
+      matches: matches,
+      matchesExplanation: matches
+        ? 'Device addresses match - registration should succeed'
+        : 'Device addresses DO NOT match - registration will fail',
+      debug: {
+        generatedAddressUpperCase: generatedAddress.toUpperCase(),
+        providedAddressUpperCase: (providedAddress || '').toUpperCase(),
+        generatedLength: generatedAddress.length,
+        providedLength: (providedAddress || '').length
+      }
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.get('/api/v1/config', (req, res) => {
   res.json({
     paystackPublicKey: process.env.PAYSTACK_PUBLIC_KEY || '',

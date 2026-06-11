@@ -10,12 +10,15 @@ It uses:
 
 ## Run
 
-Set the same token secret used by the backend:
-
 ```powershell
-$env:TOKEN_SECRET="same_secret_as_backend"
 dotnet run
 ```
+
+The app automatically loads `TOKEN_SECRET` and other settings from the root `.env` file.
+
+Defaults to the Render backend and payment page:
+- Backend API: `https://project-x-kg81.onrender.com`
+- Payment page: `https://project-x-kg81.onrender.com`
 
 If the stored deadline is expired or missing, the lock screen opens.
 

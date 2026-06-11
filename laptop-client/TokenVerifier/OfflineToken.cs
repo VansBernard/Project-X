@@ -71,6 +71,76 @@ public static class OfflineToken
         return FixedTimeEquals(enteredToken, expectedToken);
     }
 
+    public static bool VerifyWithPublicKey(string enteredToken, string hardwareUuid, int year, int month, string publicKeyPem)
+    {
+        if (!TryParseSignedToken(enteredToken, out var payload, out var signature))
+        {
+            return false;
+        }
+
+        var expectedPayload = $"{hardwareUuid}{year}{month}";
+        if (!FixedTimeEquals(payload, expectedPayload))
+        {
+            return false;
+        }
+
+        return VerifySignature(payload, signature, publicKeyPem);
+    }
+
+    public static bool VerifyReleaseWithPublicKey(string enteredToken, string hardwareUuid, string publicKeyPem)
+    {
+        if (!TryParseSignedToken(enteredToken, out var payload, out var signature))
+        {
+            return false;
+        }
+
+        var expectedPayload = $"{hardwareUuid}:release";
+        if (!FixedTimeEquals(payload, expectedPayload))
+        {
+            return false;
+        }
+
+        return VerifySignature(payload, signature, publicKeyPem);
+    }
+
+    private static bool TryParseSignedToken(string enteredToken, out string payload, out byte[] signature)
+    {
+        payload = string.Empty;
+        signature = Array.Empty<byte>();
+
+        var parts = enteredToken.Split('.', 2);
+        if (parts.Length != 2)
+        {
+            return false;
+        }
+
+        payload = parts[0];
+        try
+        {
+            signature = Convert.FromBase64String(parts[1]);
+            return signature.Length > 0;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private static bool VerifySignature(string payload, byte[] signature, string publicKeyPem)
+    {
+        try
+        {
+            using var rsa = RSA.Create();
+            rsa.ImportFromPem(publicKeyPem);
+            var payloadBytes = Encoding.UTF8.GetBytes(payload);
+            return rsa.VerifyData(payloadBytes, signature, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
     private static bool FixedTimeEquals(string left, string right)
     {
         var leftBytes = Encoding.UTF8.GetBytes(left ?? string.Empty);

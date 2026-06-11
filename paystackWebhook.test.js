@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import { strict as assert } from 'assert';
 import crypto from 'crypto';
-import pool from '../db.js';
+import pool from './db.js';
 import { requireDatabase } from './dbHelper.js';
 
 test('Paystack webhook charge.success records payment and updates contract', async (t) => {

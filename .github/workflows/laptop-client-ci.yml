@@ -1,0 +1,41 @@
+name: Laptop Client CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore dependencies
+        run: dotnet restore "laptop-client\LockScreenApp\LockScreenApp.csproj"
+
+      - name: Build LaptopClient
+        run: dotnet build "laptop-client\LockScreenApp\LockScreenApp.csproj" --configuration Release --no-restore
+
+      - name: Run tests
+        run: dotnet test "laptop-client\tests\LockScreenApp.Tests\LockScreenApp.Tests.csproj" --configuration Release --no-build
+
+      - name: Install WiX Toolset
+        run: choco install wixtoolset --no-progress --yes
+
+      - name: Build MSI installer
+        run: powershell -NoProfile -ExecutionPolicy Bypass .\laptop-client\build-installer.ps1
+
+      - name: Upload MSI artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ProjectX-LaptopClient-MSI
+          path: laptop-client/installer/ProjectX-LaptopClient.msi

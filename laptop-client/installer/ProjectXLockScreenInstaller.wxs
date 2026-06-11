@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+  <Product Id="*"
+           Name="Project X Laptop Client"
+           Language="1033"
+           Version="1.0.0.0"
+           Manufacturer="Project X"
+           UpgradeCode="28bb37b5-4c63-4b49-a847-4b3ee7a6c44b">
+    <Package InstallerVersion="500" Compressed="yes" InstallScope="perMachine" Description="Project X Laptop Client" />
+    <MediaTemplate EmbedCab="yes" />
+
+    <Directory Id="TARGETDIR" Name="SourceDir">
+      <Directory Id="ProgramFilesFolder">
+        <Directory Id="INSTALLFOLDER" Name="ProjectX\LaptopClient" />
+      </Directory>
+    </Directory>
+
+    <Feature Id="ProductFeature" Title="Project X Laptop Client" Level="1">
+      <ComponentGroupRef Id="ProductComponents" />
+    </Feature>
+  </Product>
+</Wix>

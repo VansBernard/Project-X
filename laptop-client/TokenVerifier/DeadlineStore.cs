@@ -10,28 +10,23 @@ public static class DeadlineStore
 
     public static DateOnly? GetDeadline()
     {
-        using var key = Registry.CurrentUser.OpenSubKey(RegistryPath);
-        var rawValue = key?.GetValue(DeadlineValueName)?.ToString();
-
+        var rawValue = SecureRegistry.GetEncryptedString(RegistryPath, DeadlineValueName);
         return DateOnly.TryParse(rawValue, out var deadline) ? deadline : null;
     }
 
     public static void SetDeadline(DateOnly deadline)
     {
-        using var key = Registry.CurrentUser.CreateSubKey(RegistryPath);
-        key.SetValue(DeadlineValueName, deadline.ToString("yyyy-MM-dd"), RegistryValueKind.String);
+        SecureRegistry.SetEncryptedString(RegistryPath, DeadlineValueName, deadline.ToString("yyyy-MM-dd"));
     }
 
     public static bool IsPermanentlyReleased()
     {
-        using var key = Registry.CurrentUser.OpenSubKey(RegistryPath);
-        return key?.GetValue(ReleasedValueName)?.ToString() == "1";
+        return SecureRegistry.GetEncryptedString(RegistryPath, ReleasedValueName) == "1";
     }
 
     public static void PermanentlyRelease()
     {
-        using var key = Registry.CurrentUser.CreateSubKey(RegistryPath);
-        key.SetValue(ReleasedValueName, "1", RegistryValueKind.String);
+        SecureRegistry.SetEncryptedString(RegistryPath, ReleasedValueName, "1");
     }
 
     public static bool IsLocked(DateOnly today)

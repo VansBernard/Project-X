@@ -80,8 +80,24 @@ static string ResolveLockScreenPath()
     }
 
     var agentDir = AppContext.BaseDirectory;
-    var candidate = Path.GetFullPath(Path.Combine(agentDir, @"..\..\..\..\LockScreenApp\bin\Debug\net8.0-windows\LockScreenApp.exe"));
-    return candidate;
+    var candidatePaths = new[]
+    {
+        Path.Combine(agentDir, "LockScreenApp.exe"),
+        Path.Combine(agentDir, "..", "LockScreenApp", "LockScreenApp.exe"),
+        Path.Combine(agentDir, "..", "..", "LockScreenApp", "bin", "Debug", "net8.0-windows", "LockScreenApp.exe"),
+        Path.Combine(agentDir, "..", "..", "LockScreenApp", "bin", "Release", "net8.0-windows", "LockScreenApp.exe")
+    };
+
+    foreach (var path in candidatePaths)
+    {
+        var fullPath = Path.GetFullPath(path);
+        if (File.Exists(fullPath))
+        {
+            return fullPath;
+        }
+    }
+
+    return Path.Combine(agentDir, "LockScreenApp.exe");
 }
 
 static string ResolveAgentExecutablePath()

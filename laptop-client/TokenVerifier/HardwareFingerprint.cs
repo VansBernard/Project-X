@@ -22,9 +22,13 @@ public static class HardwareFingerprint
     public static string GetHardwareUuid()
     {
         var configuredHardwareUuid = Environment.GetEnvironmentVariable("PROJECTX_HARDWARE_UUID");
-        if (IsUsable(configuredHardwareUuid))
+        if (!string.IsNullOrWhiteSpace(configuredHardwareUuid))
         {
-            return configuredHardwareUuid.Trim();
+            var trimmedHardwareUuid = configuredHardwareUuid.Trim();
+            if (IsUsable(trimmedHardwareUuid))
+            {
+                return trimmedHardwareUuid;
+            }
         }
 
         if (!OperatingSystem.IsWindows())
@@ -92,7 +96,8 @@ public static class HardwareFingerprint
 
     private static bool IsUsable(string? value)
     {
-        return value is not null &&
-               !IgnoredValues.Contains(value.Trim(), StringComparer.OrdinalIgnoreCase);
+        var trimmed = value?.Trim();
+        return !string.IsNullOrWhiteSpace(trimmed) &&
+               !IgnoredValues.Contains(trimmed, StringComparer.OrdinalIgnoreCase);
     }
 }

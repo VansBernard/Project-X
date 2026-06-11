@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import { strict as assert } from 'assert';
-import pool from '../db.js';
+import pool from './db.js';
 import { requireDatabase } from './dbHelper.js';
 
 test('GET /api/v1/devices/:hardwareUUID/status returns device and contract info', async (t) => {
