@@ -136,7 +136,7 @@ app.post('/api/v1/devices/register', asyncHandler(async (req, res) => {
   const normalizedAddress = generateDeviceAddress(hardwareUuid);
   const deviceAddress = providedDeviceAddress || normalizedAddress;
 
-  if (normalizedAddress !== deviceAddress) {
+  if (normalizedAddress.toUpperCase() !== deviceAddress.toUpperCase()) {
     const err = new Error('Device address does not match the hardware UUID');
     err.status = 400;
     throw err;
@@ -274,7 +274,7 @@ app.post('/api/v1/debug/device-address', (req, res) => {
   try {
     const generatedAddress = generateDeviceAddress(hardwareUuid);
     const providedAddress = providedDeviceAddress || generatedAddress;
-    const matches = generatedAddress === providedAddress;
+    const matches = generatedAddress.toUpperCase() === providedAddress.toUpperCase();
 
     res.json({
       hardwareUuid: hardwareUuid.substring(0, 8) + '...', // Masked for security
