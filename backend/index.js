@@ -107,7 +107,7 @@ function generateDeviceAddress(hardwareUUID) {
   }
 
   const normalized = hardwareUUID.trim().toUpperCase();
-  const hash = crypto.createHash('sha256').update(normalized, 'utf8').digest('hex').substring(0, 12);
+  const hash = crypto.createHash('sha256').update(normalized, 'utf8').digest('hex').substring(0, 12).toUpperCase();
   return `${hash.slice(0, 4)}-${hash.slice(4, 8)}-${hash.slice(8, 12)}`;
 }
 
