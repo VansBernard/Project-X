@@ -1,0 +1,123 @@
+<Window x:Class="ProjectX.LockScreen.Views.LicenseEntryWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="License Entry" 
+        Width="600" Height="500"
+        WindowStartupLocation="CenterScreen"
+        Background="#1a1a1a"
+        Foreground="White"
+        ResizeMode="NoResize"
+        WindowStyle="None">
+    
+    <Grid Background="#0d0d0d">
+        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="20" Width="500">
+            
+            <!-- Title -->
+            <TextBlock FontSize="28" FontWeight="Bold" Foreground="#FF6B35" TextAlignment="Center">
+                📋 Enter License
+            </TextBlock>
+
+            <!-- Description -->
+            <TextBlock FontSize="13" Foreground="#CCCCCC" TextAlignment="Center" TextWrapping="Wrap">
+                Enter your license key or recovery token to unlock this device
+            </TextBlock>
+
+            <!-- License Input -->
+            <StackPanel Spacing="8">
+                <TextBlock FontSize="12" Foreground="#999999">License Key or Recovery Token:</TextBlock>
+                <TextBox x:Name="LicenseInputBox"
+                         Text="{Binding LicenseInput, UpdateSourceTrigger=PropertyChanged}"
+                         Background="#2a2a2a"
+                         Foreground="White"
+                         BorderThickness="1"
+                         BorderBrush="#444444"
+                         Padding="12,10"
+                         Height="80"
+                         TextWrapping="Wrap"
+                         AcceptsReturn="True"
+                         FontFamily="Courier New"
+                         FontSize="11"/>
+            </StackPanel>
+
+            <!-- Validation Message -->
+            <Border Background="#4C1414" Padding="12" CornerRadius="4"
+                    Visibility="{Binding IsValidationSuccess, Converter={StaticResource FalseToVisibilityConverter}}">
+                <TextBlock Foreground="#FF9999" TextWrapping="Wrap" FontSize="12">
+                    <Run Text="{Binding ValidationMessage}"/>
+                </TextBlock>
+            </Border>
+
+            <!-- Success Message -->
+            <Border Background="#1A4C1A" Padding="12" CornerRadius="4"
+                    Visibility="{Binding IsValidationSuccess, Converter={StaticResource BoolToVisibilityConverter}}">
+                <StackPanel>
+                    <TextBlock Foreground="#66DD66" FontWeight="Bold">✓ License Valid</TextBlock>
+                    <TextBlock Foreground="#99DD99" TextWrapping="Wrap" FontSize="11" Margin="0,5,0,0">
+                        License accepted. Unlocking device...
+                    </TextBlock>
+                </StackPanel>
+            </Border>
+
+            <!-- Loading/Status -->
+            <TextBlock FontSize="11" Foreground="#666666" TextAlignment="Center"
+                       Text="{Binding ValidationMessage, FallbackValue=''}"/>
+
+            <!-- Action Buttons -->
+            <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                <Button Grid.Column="0"
+                        Content="Submit"
+                        Command="{Binding SubmitCommand}"
+                        CommandParameter="{Binding LicenseInput}"
+                        Background="#FF6B35"
+                        Foreground="White"
+                        Padding="10,12"
+                        FontWeight="SemiBold"
+                        IsEnabled="{Binding IsValidating, Converter={StaticResource InverseBooleanConverter}}"
+                        Cursor="Hand">
+                    <Button.Resources>
+                        <Style TargetType="Button">
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate TargetType="Button">
+                                        <Border Background="{TemplateBinding Background}" CornerRadius="4" Padding="10,12">
+                                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                        </Border>
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+                        </Style>
+                    </Button.Resources>
+                </Button>
+
+                <Button Grid.Column="1"
+                        Content="Cancel"
+                        Command="{Binding CancelCommand}"
+                        Background="#666666"
+                        Foreground="White"
+                        Padding="10,12"
+                        FontWeight="SemiBold"
+                        Cursor="Hand">
+                    <Button.Resources>
+                        <Style TargetType="Button">
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate TargetType="Button">
+                                        <Border Background="{TemplateBinding Background}" CornerRadius="4" Padding="10,12">
+                                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                        </Border>
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+                        </Style>
+                    </Button.Resources>
+                </Button>
+            </Grid>
+
+            <!-- Help -->
+            <TextBlock FontSize="10" Foreground="#666666" TextAlignment="Center" TextWrapping="Wrap">
+                You can find your license key in your confirmation email or your account dashboard
+            </TextBlock>
+
+        </StackPanel>
+    </Grid>
+</Window>
