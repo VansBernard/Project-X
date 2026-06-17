@@ -1,0 +1,46 @@
+{
+  "name": "project-x",
+  "version": "0.1.0",
+  "description": "Pay-as-you-go laptop financing platform",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "apps/api",
+    "apps/admin"
+  ],
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  },
+  "scripts": {
+    "dev:api": "npm --workspace apps/api run dev",
+    "dev:admin": "npm --workspace apps/admin run dev",
+    "build:api": "npm --workspace apps/api run build",
+    "build:admin": "npm --workspace apps/admin run build",
+    "start:api": "npm --workspace apps/api run start",
+    "lint:api": "npm --workspace apps/api run lint",
+    "lint:admin": "npm --workspace apps/admin run lint",
+    "lint": "npm run lint:api && npm run lint:admin",
+    "test": "npm --workspace apps/api run test",
+    "db:migrate": "npm --workspace apps/api run prisma:migrate",
+    "db:generate": "npm --workspace apps/api run prisma:generate",
+    "db:validate": "node scripts/prisma-validate.js",
+    "db:studio": "npm --workspace apps/api run prisma:studio",
+    "generate:jwt": "node scripts/generate-jwt-keys.js",
+    "generate:rsa": "node scripts/generate-rsa-keys.js",
+    "generate:all": "npm run generate:jwt && npm run generate:rsa",
+    "check": "npm run db:validate && npm run build:api && npm run build:admin",
+    "clean": "node -e \"const fs=require('fs'); for (const p of ['node_modules','apps/api/node_modules','apps/api/dist','coverage']) fs.rmSync(p,{recursive:true,force:true});\""
+  },
+  "keywords": [
+    "laptop-financing",
+    "pay-as-you-go",
+    "licensing",
+    "paystack",
+    "wpf"
+  ],
+  "license": "UNLICENSED",
+  "dependencies": {
+    "terser": "^5.48.0"
+  }
+}

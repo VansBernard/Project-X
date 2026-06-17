@@ -1,136 +1,181 @@
-# Project-X: Pay-As-You-Go Lock Screen Payment System
+# Project X
 
-A comprehensive solution for device owners to generate pay-as-you-go lock screens on Windows laptops, enabling customers to scan QR codes and make payments through a web interface.
+Project X is a pay-as-you-go laptop financing platform. It combines a Node.js API, Supabase PostgreSQL database, Paystack payments, RSA-signed licenses, and a WPF desktop client for offline license validation.
 
-## 📁 Project Structure
+## Current Scope
 
+The repository currently contains the backend foundation, architecture documentation, security documentation, and early desktop licensing components.
+
+Built backend modules:
+
+- Authentication and authorization
+- Dealer management
+- Customer management
+- Contract management
+- Paystack integration
+- License engine
+- License delivery
+
+Desktop foundation:
+
+- WPF .NET 8 MVVM structure
+- Offline license cache
+- RSA signature verification
+- Device ownership and expiration checks
+
+## Technology Stack
+
+Backend:
+
+- Node.js
+- Express
+- TypeScript
+- Prisma ORM
+- Supabase PostgreSQL
+
+Frontend:
+
+- React
+- TypeScript
+- TailwindCSS
+
+Desktop:
+
+- WPF
+- .NET 8
+- MVVM
+
+Payments and licensing:
+
+- Paystack
+- Nodemailer
+- RSA 4096 license signing
+
+## Repository Structure
+
+```text
+Project X/
+  apps/
+    api/
+      prisma/
+      src/
+        config/
+        lib/
+        middleware/
+        modules/
+      package.json
+      tsconfig.json
+      .env.example
+
+    desktop/
+      ProjectX.Desktop/
+        Infrastructure/
+        Models/
+        Services/
+        ViewModels/
+
+  docs/
+    architecture/
+    security/
+    ENV_SETUP.md
+    SETUP.md
+
+  scripts/
+    generate-jwt-keys.js
+    generate-rsa-keys.js
+
+  package.json
+  README.md
+  CONTRIBUTING.md
 ```
-Project-X/
-├── backend/                    # Node.js API Server
-│   ├── src/                   # Application source code
-│   │   ├── index.js          # Express server entry point
-│   │   ├── db.js             # Database connection & queries
-│   │   ├── migrate.js        # Database schema migrations
-│   │   ├── create_db.js      # Database initialization
-│   │   └── scripts.js        # Utility scripts
-│   ├── test/                 # Test suites
-│   ├── utils/                # Shared utilities
-│   │   ├── logger.js         # Logging module
-│   │   ├── notifications.js  # Email/notification service
-│   │   ├── timeToken.js      # Token generation & validation
-│   │   └── validation.js     # Input validation
-│   ├── package.json          # Node dependencies
-│   └── .env.example          # Environment variables template
-│
-├── web/                       # Payment Web Interface
-│   ├── index.html            # Main payment page
-│   ├── styles.css            # Styling
-│   └── scripts.js            # Frontend logic (QR scanning, payments)
-│
-├── laptop-client/            # C# Windows Desktop App
-│   ├── LockScreenApp/        # Main lock screen application
-│   │   ├── App.xaml          # WPF application definition
-│   │   ├── MainWindow.xaml   # Lock screen UI
-│   │   └── ClientLogger.cs   # Client-side logging
-│   ├── StartupAgent/         # Background startup service
-│   │   └── Program.cs        # Service entry point
-│   ├── TokenVerifier/        # Device registration & token validation
-│   │   ├── OfflineToken.cs   # Offline token management
-│   │   ├── HardwareFingerprint.cs  # Device identification
-│   │   └── RegistrationStore.cs    # Local device data storage
-│   └── installer/            # WiX installer package
-│
-├── docs/                     # Documentation
-│   ├── ARCHITECTURE.md       # System design & flow
-│   ├── DEPLOYMENT.md         # Deployment guides
-│   ├── MIGRATION_GUIDE.md    # Database migration steps
-│   ├── SCHEMA_INTEGRATION_GUIDE.md
-│   └── *.sql                 # Database schema files
-│
-├── .gitignore               # Git ignore rules
-├── .env.example             # Root-level env template (if needed)
-└── package-lock.json        # Dependency lock file (from backend/)
 
-```
+## Quick Start
 
-## 🚀 Quick Start
+Install dependencies:
 
-### Backend Setup
 ```bash
-cd backend
 npm install
-npm run migrate        # Run database migrations
-npm run dev           # Start development server (port 5000)
 ```
 
-### Web UI
-The web interface is a static HTML/CSS/JS application:
-- Serve from `web/` folder via any HTTP server
-- Customers access via QR code from lock screen
-- Integrates with Paystack for payments
-
-### Windows Client Setup
-- Navigate to `laptop-client/`
-- Open in Visual Studio
-- Build the installer or run directly
-
-## 🔑 Key Features
-
-1. **Device Registration**
-   - Owners install Windows app and fill device details
-   - System generates unique device address
-   - Device address used as QR code on lock screen
-
-2. **Payment Flow**
-   - Customers scan QR code from lock screen
-   - Opens web payment interface
-   - Selects payment amount
-   - Completes Paystack payment
-   - Device verifies payment and unlocks screen
-
-3. **Backend Services**
-   - Device registration & authentication
-   - QR code generation
-   - Payment verification with Paystack
-   - Email notifications for transactions
-   - Token generation & validation
-
-## 📊 Database
-
-All database setup is automated:
-```bash
-cd backend
-npm run migrate    # Creates schema and initializes DB
-```
-
-## 🔐 Environment Variables
-
-Create `.env` files in:
-- `backend/.env` - API server configuration
-- Set required variables for DB, Paystack API keys, email, etc.
-
-See `.env.example` files for templates.
-
-## 🧪 Testing
+Copy API environment variables:
 
 ```bash
-cd backend
-npm test              # Run all tests
-npm run test:unit     # Unit tests only
-npm run test:integration  # Integration tests
+cp apps/api/.env.example apps/api/.env
 ```
 
-## 📦 Deployment
+Generate development secrets:
 
-Deployment guides available in `docs/DEPLOYMENT.md`
+```bash
+npm run generate:all
+```
 
-## 🛠️ Development
+Validate and generate Prisma:
 
-- **Backend**: Node.js + Express + PostgreSQL
-- **Frontend**: Vanilla JS + HTML/CSS + Paystack SDK
-- **Desktop**: C# + WPF (Windows only)
+```bash
+npm run db:validate
+npm run db:generate
+```
 
-## 📝 License
+Build the API:
 
-Private Project
+```bash
+npm run build:api
+```
+
+Start the API:
+
+```bash
+npm run dev:api
+```
+
+Health check:
+
+```bash
+curl http://localhost:4000/api/v1/health
+```
+
+## Workspace Scripts
+
+```bash
+npm run dev:api          # Start API in watch mode
+npm run build:api        # Compile the API
+npm run start:api        # Start compiled API
+npm run db:validate      # Validate Prisma schema
+npm run db:generate      # Generate Prisma client
+npm run db:migrate       # Run Prisma migrate dev
+npm run db:studio        # Open Prisma Studio
+npm run generate:jwt     # Generate JWT secrets
+npm run generate:rsa     # Generate RSA 4096 license keys
+npm run generate:all     # Generate JWT and RSA keys
+npm run check            # Validate schema and build API
+```
+
+## Environment Setup
+
+Environment configuration is documented in [docs/ENV_SETUP.md](docs/ENV_SETUP.md).
+
+Required categories:
+
+- Database URL
+- JWT secrets
+- Paystack keys
+- SMTP credentials
+- RSA 4096 license keys
+- CORS origin
+
+## Documentation
+
+- [Architecture Overview](docs/architecture/README.md)
+- [API Architecture](docs/architecture/api-architecture.md)
+- [Database Architecture](docs/architecture/database-architecture.md)
+- [Desktop Architecture](docs/architecture/desktop-architecture.md)
+- [Security Architecture](docs/architecture/security-architecture.md)
+- [License Engine Security](docs/security/license-engine.md)
+- [Offline License Validation](docs/security/offline-license-validation.md)
+- [Environment Setup](docs/ENV_SETUP.md)
+- [Development Setup](docs/SETUP.md)
+
+## Development Status
+
+Project X is in foundation development. The backend compiles and the Prisma schema validates. The next major product step is the React admin dashboard foundation.
 

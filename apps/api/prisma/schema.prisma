@@ -1,0 +1,702 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserStatus {
+  invited
+  active
+  suspended
+  disabled
+
+  @@map("user_status")
+}
+
+enum DealerStatus {
+  active
+  suspended
+  deleted
+
+  @@map("dealer_status")
+}
+
+enum CustomerStatus {
+  prospect
+  active
+  delinquent
+  completed
+  blocked
+  archived
+
+  @@map("customer_status")
+}
+
+enum DeviceStatus {
+  inventory
+  assigned
+  active
+  locked
+  released
+  lost
+  retired
+
+  @@map("device_status")
+}
+
+enum ContractStatus {
+  active
+  completed
+  cancelled
+  defaulted
+
+  @@map("contract_status")
+}
+
+enum ContractInstallmentStatus {
+  pending
+  completed
+  defaulted
+  cancelled
+
+  @@map("contract_installment_status")
+}
+
+enum PaymentStatus {
+  pending
+  successful
+  failed
+  reversed
+  refunded
+
+  @@map("payment_status")
+}
+
+enum PaymentAttemptType {
+  initialization
+  validation
+  webhook_processing
+  retry
+
+  @@map("payment_attempt_type")
+}
+
+enum PaymentAttemptStatus {
+  pending
+  successful
+  failed
+
+  @@map("payment_attempt_status")
+}
+
+enum PaymentWebhookStatus {
+  received
+  processed
+  ignored
+  failed
+
+  @@map("payment_webhook_status")
+}
+
+enum LicenseDeliveryStatus {
+  queued
+  processing
+  sent
+  retrying
+  failed
+
+  @@map("license_delivery_status")
+}
+
+enum PaymentProvider {
+  paystack
+
+  @@map("payment_provider")
+}
+
+enum LicenseStatus {
+  pending
+  active
+  suspended
+  expired
+  revoked
+
+  @@map("license_status")
+}
+
+enum NotificationChannel {
+  email
+  sms
+  push
+  in_app
+
+  @@map("notification_channel")
+}
+
+enum NotificationStatus {
+  queued
+  sent
+  failed
+  cancelled
+
+  @@map("notification_status")
+}
+
+enum AuditActorType {
+  user
+  device
+  system
+  payment_provider
+
+  @@map("audit_actor_type")
+}
+
+enum AuthTokenType {
+  email_verification
+  password_reset
+
+  @@map("auth_token_type")
+}
+
+model Dealer {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name        String
+  legalName   String?   @map("legal_name")
+  slug        String
+  email       String?
+  phone       String?
+  country     String?   @db.VarChar(2)
+  timezone    String    @default("UTC")
+  status      DealerStatus @default(active)
+  suspendedAt DateTime? @map("suspended_at") @db.Timestamptz(6)
+  suspendedReason String? @map("suspended_reason")
+  metadata    Json      @default("{}")
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt   DateTime? @map("deleted_at") @db.Timestamptz(6)
+
+  users         User[]
+  roles         Role[]
+  permissions   Permission[]
+  rolePermissions RolePermission[]
+  customers     Customer[]
+  devices       Device[]
+  contracts     Contract[]
+  contractInstallments ContractInstallment[]
+  payments      Payment[]
+  paymentAttempts PaymentAttempt[]
+  paymentWebhookEvents PaymentWebhookEvent[]
+  licenses      License[]
+  licenseDeliveryJobs LicenseDeliveryJob[]
+  notifications Notification[]
+  auditLogs     AuditLog[]
+  sessions      Session[]
+  authTokens    AuthToken[]
+
+  @@unique([slug])
+  @@index([status])
+  @@index([suspendedAt])
+  @@index([deletedAt])
+  @@map("dealers")
+}
+
+model User {
+  id           String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  dealerId     String     @map("dealer_id") @db.Uuid
+  roleId       String?    @map("role_id") @db.Uuid
+  email        String
+  passwordHash String     @map("password_hash")
+  firstName    String?    @map("first_name")
+  lastName     String?    @map("last_name")
+  phone        String?
+  status       UserStatus @default(invited)
+  emailVerifiedAt DateTime? @map("email_verified_at") @db.Timestamptz(6)
+  lastLoginAt  DateTime?  @map("last_login_at") @db.Timestamptz(6)
+  passwordChangedAt DateTime? @map("password_changed_at") @db.Timestamptz(6)
+  metadata     Json       @default("{}")
+  createdAt    DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime   @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt    DateTime?  @map("deleted_at") @db.Timestamptz(6)
+
+  dealer Dealer @relation(fields: [dealerId], references: [id], onDelete: Restrict)
+  role   Role?  @relation(fields: [roleId], references: [id], onDelete: SetNull)
+
+  notifications Notification[]
+  auditLogs     AuditLog[]     @relation("AuditActorUser")
+  sessions      Session[]
+  authTokens    AuthToken[]
+
+  @@unique([dealerId, email])
+  @@unique([dealerId, id])
+  @@index([dealerId, status])
+  @@index([dealerId, roleId])
+  @@index([dealerId, deletedAt])
+  @@map("users")
+}
+
+model Session {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  dealerId       String    @map("dealer_id") @db.Uuid
+  userId         String    @map("user_id") @db.Uuid
+  refreshTokenHash String  @map("refresh_token_hash")
+  ipAddress      String?   @map("ip_address") @db.Inet
+  userAgent      String?   @map("user_agent")
+  expiresAt      DateTime  @map("expires_at") @db.Timestamptz(6)
+  revokedAt      DateTime? @map("revoked_at") @db.Timestamptz(6)
+  replacedBySessionId String? @map("replaced_by_session_id") @db.Uuid
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt      DateTime? @map("deleted_at") @db.Timestamptz(6)
+
+  dealer Dealer @relation(fields: [dealerId], references: [id], onDelete: Restrict)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([refreshTokenHash])
+  @@index([dealerId, userId])
+  @@index([dealerId, expiresAt])
+  @@index([dealerId, revokedAt])
+  @@index([dealerId, deletedAt])
+  @@map("sessions")
+}
+
+model AuthToken {
+  id        String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  dealerId  String        @map("dealer_id") @db.Uuid
+  userId    String        @map("user_id") @db.Uuid
+  type      AuthTokenType
+  tokenHash String        @map("token_hash")
+  expiresAt DateTime      @map("expires_at") @db.Timestamptz(6)
+  usedAt    DateTime?     @map("used_at") @db.Timestamptz(6)
+  createdAt DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt DateTime?     @map("deleted_at") @db.Timestamptz(6)
+
+  dealer Dealer @relation(fields: [dealerId], references: [id], onDelete: Restrict)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([tokenHash])
+  @@index([dealerId, userId, type])
+  @@index([dealerId, expiresAt])
+  @@index([dealerId, usedAt])
+  @@index([dealerId, deletedAt])
+  @@map("auth_tokens")
+}
+
+model Role {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  dealerId    String    @map("dealer_id") @db.Uuid
+  name        String
+  description String?
+  isSystem    Boolean   @default(false) @map("is_system")
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt   DateTime? @map("deleted_at") @db.Timestamptz(6)
+
+  dealer      Dealer           @relation(fields: [dealerId], references: [id], onDelete: Restrict)
+  users       User[]
+  permissions RolePermission[]
+
+  @@unique([dealerId, name])
+  @@unique([dealerId, id])
+  @@index([dealerId, deletedAt])
+  @@map("roles")
+}
+
+model Permission {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  dealerId    String    @map("dealer_id") @db.Uuid
+  key         String
+  name        String
+  description String?
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt   DateTime? @map("deleted_at") @db.Timestamptz(6)
+
+  dealer Dealer           @relation(fields: [dealerId], references: [id], onDelete: Restrict)
+  roles  RolePermission[]
+
+  @@unique([dealerId, key])
+  @@unique([dealerId, id])
+  @@index([dealerId, deletedAt])
+  @@map("permissions")
+}
+
+model RolePermission {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  dealerId     String   @map("dealer_id") @db.Uuid
+  roleId       String   @map("role_id") @db.Uuid
+  permissionId String   @map("permission_id") @db.Uuid
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  dealer     Dealer     @relation(fields: [dealerId], references: [id], onDelete: Cascade)
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@unique([dealerId, roleId, permissionId])
+  @@index([dealerId, permissionId])
+  @@map("role_permissions")
+}
+
+model Customer {
+  id          String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  dealerId    String         @map("dealer_id") @db.Uuid
+  fullName    String?        @map("full_name")
+  firstName   String         @map("first_name")
+  lastName    String         @map("last_name")
+  email       String?
+  phone       String?
+  address     String?
+  nationalId  String?        @map("national_id")
+  emergencyContact Json      @default("{}") @map("emergency_contact")
+  city        String?
+  state       String?
+  country     String?        @db.VarChar(2)
+  status      CustomerStatus @default(prospect)
+  metadata    Json           @default("{}")
+  createdAt   DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime       @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt   DateTime?      @map("deleted_at") @db.Timestamptz(6)
+
+  dealer        Dealer         @relation(fields: [dealerId], references: [id], onDelete: Restrict)
+  devices       Device[]
+  contracts     Contract[]
+  payments      Payment[]
+  licenses      License[]
+  notifications Notification[]
+  auditLogs     AuditLog[]
+
+  @@unique([dealerId, nationalId])
+  @@index([dealerId, status])
+  @@index([dealerId, fullName])
+  @@unique([dealerId, id])
+  @@index([dealerId, email])
+  @@index([dealerId, phone])
+  @@index([dealerId, deletedAt])
+  @@map("customers")
+}
+
+model Device {
+  id                 String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  dealerId           String       @map("dealer_id") @db.Uuid
+  customerId         String?      @map("customer_id") @db.Uuid
+  serialNumber       String       @map("serial_number")
+  manufacturer       String?
+  model              String?
+  hardwareFingerprint String?     @map("hardware_fingerprint")
+  status             DeviceStatus @default(inventory)
+  lastSeenAt         DateTime?    @map("last_seen_at") @db.Timestamptz(6)
+  metadata           Json         @default("{}")
+  createdAt          DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime     @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt          DateTime?    @map("deleted_at") @db.Timestamptz(6)
+
+  dealer    Dealer     @relation(fields: [dealerId], references: [id], onDelete: Restrict)
+  customer  Customer?  @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  contracts Contract[]
+  licenses  License[]
+  auditLogs AuditLog[]
+
+  @@unique([dealerId, serialNumber])
+  @@unique([dealerId, id])
+  @@index([dealerId, customerId])
+  @@index([dealerId, status])
+  @@index([dealerId, hardwareFingerprint])
+  @@index([dealerId, lastSeenAt])
+  @@index([dealerId, deletedAt])
+  @@map("devices")
+}
+
+model Contract {
+  id              String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  dealerId        String         @map("dealer_id") @db.Uuid
+  customerId      String         @map("customer_id") @db.Uuid
+  deviceId        String?        @map("device_id") @db.Uuid
+  contractNumber  String         @map("contract_number")
+  status          ContractStatus @default(active)
+  currency        String         @default("NGN") @db.VarChar(3)
+  devicePrice     Decimal        @map("device_price") @db.Decimal(14, 2)
+  depositAmount   Decimal        @default(0) @map("deposit_amount") @db.Decimal(14, 2)
+  remainingBalance Decimal       @default(0) @map("remaining_balance") @db.Decimal(14, 2)
+  installmentAmount Decimal      @map("installment_amount") @db.Decimal(14, 2)
+  principalAmount Decimal        @map("principal_amount") @db.Decimal(14, 2)
+  totalAmount     Decimal        @map("total_amount") @db.Decimal(14, 2)
+  amountPaid      Decimal        @default(0) @map("amount_paid") @db.Decimal(14, 2)
+  firstDueDate    DateTime?      @map("first_due_date") @db.Date
+  nextDueDate     DateTime?      @map("next_due_date") @db.Date
+  startDate       DateTime?      @map("start_date") @db.Date
+  endDate         DateTime?      @map("end_date") @db.Date
+  metadata        Json           @default("{}")
+  createdAt       DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime       @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt       DateTime?      @map("deleted_at") @db.Timestamptz(6)
+
+  dealer   Dealer    @relation(fields: [dealerId], references: [id], onDelete: Restrict)
+  customer Customer  @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  device   Device?   @relation(fields: [deviceId], references: [id], onDelete: SetNull)
+  payments Payment[]
+  licenses License[]
+  installments ContractInstallment[]
+  auditLogs AuditLog[]
+
+  @@unique([dealerId, contractNumber])
+  @@unique([dealerId, id])
+  @@index([dealerId, customerId])
+  @@index([dealerId, deviceId])
+  @@index([dealerId, status])
+  @@index([dealerId, nextDueDate])
+  @@index([dealerId, startDate])
+  @@index([dealerId, endDate])
+  @@index([dealerId, deletedAt])
+  @@map("contracts")
+}
+
+model ContractInstallment {
+  id             String                    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  dealerId       String                    @map("dealer_id") @db.Uuid
+  contractId     String                    @map("contract_id") @db.Uuid
+  sequenceNumber Int                       @map("sequence_number")
+  dueDate        DateTime                  @map("due_date") @db.Date
+  amountDue      Decimal                   @map("amount_due") @db.Decimal(14, 2)
+  status         ContractInstallmentStatus @default(pending)
+  metadata       Json                      @default("{}")
+  createdAt      DateTime                  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime                  @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt      DateTime?                 @map("deleted_at") @db.Timestamptz(6)
+
+  dealer   Dealer   @relation(fields: [dealerId], references: [id], onDelete: Restrict)
+  contract Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+
+  @@unique([dealerId, contractId, sequenceNumber])
+  @@unique([dealerId, id])
+  @@index([dealerId, contractId])
+  @@index([dealerId, dueDate])
+  @@index([dealerId, status])
+  @@index([dealerId, deletedAt])
+  @@map("contract_installments")
+}
+
+model Payment {
+  id                  String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  dealerId            String          @map("dealer_id") @db.Uuid
+  customerId          String          @map("customer_id") @db.Uuid
+  contractId          String?         @map("contract_id") @db.Uuid
+  provider            PaymentProvider @default(paystack)
+  providerReference   String          @map("provider_reference")
+  providerTransaction String?         @map("provider_transaction")
+  status              PaymentStatus   @default(pending)
+  currency            String          @default("NGN") @db.VarChar(3)
+  amount              Decimal         @db.Decimal(14, 2)
+  paidAt              DateTime?       @map("paid_at") @db.Timestamptz(6)
+  metadata            Json            @default("{}")
+  createdAt           DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt           DateTime        @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt           DateTime?       @map("deleted_at") @db.Timestamptz(6)
+
+  dealer   Dealer    @relation(fields: [dealerId], references: [id], onDelete: Restrict)
+  customer Customer  @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  contract Contract? @relation(fields: [contractId], references: [id], onDelete: SetNull)
+  attempts PaymentAttempt[]
+  webhookEvents PaymentWebhookEvent[]
+  licenseDeliveryJobs LicenseDeliveryJob[]
+
+  @@unique([provider, providerReference])
+  @@unique([dealerId, id])
+  @@index([dealerId, customerId])
+  @@index([dealerId, contractId])
+  @@index([dealerId, status])
+  @@index([dealerId, paidAt])
+  @@index([dealerId, deletedAt])
+  @@map("payments")
+}
+
+model PaymentAttempt {
+  id             String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  dealerId       String               @map("dealer_id") @db.Uuid
+  paymentId      String?              @map("payment_id") @db.Uuid
+  type           PaymentAttemptType
+  status         PaymentAttemptStatus @default(pending)
+  provider       PaymentProvider      @default(paystack)
+  providerReference String?           @map("provider_reference")
+  attemptNumber  Int                  @default(1) @map("attempt_number")
+  requestPayload  Json?               @map("request_payload")
+  responsePayload Json?               @map("response_payload")
+  errorCode      String?              @map("error_code")
+  errorMessage   String?              @map("error_message")
+  nextRetryAt    DateTime?            @map("next_retry_at") @db.Timestamptz(6)
+  createdAt      DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime             @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt      DateTime?            @map("deleted_at") @db.Timestamptz(6)
+
+  dealer  Dealer   @relation(fields: [dealerId], references: [id], onDelete: Restrict)
+  payment Payment? @relation(fields: [paymentId], references: [id], onDelete: SetNull)
+
+  @@index([dealerId, paymentId])
+  @@index([dealerId, providerReference])
+  @@index([dealerId, type, status])
+  @@index([dealerId, nextRetryAt])
+  @@index([dealerId, deletedAt])
+  @@map("payment_attempts")
+}
+
+model PaymentWebhookEvent {
+  id              String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  dealerId        String?              @map("dealer_id") @db.Uuid
+  paymentId       String?              @map("payment_id") @db.Uuid
+  provider        PaymentProvider      @default(paystack)
+  event           String
+  providerEventId String?              @map("provider_event_id")
+  providerReference String?            @map("provider_reference")
+  signature       String?
+  payload         Json
+  status          PaymentWebhookStatus @default(received)
+  errorMessage    String?              @map("error_message")
+  processedAt     DateTime?            @map("processed_at") @db.Timestamptz(6)
+  createdAt       DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime             @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt       DateTime?            @map("deleted_at") @db.Timestamptz(6)
+
+  dealer  Dealer?  @relation(fields: [dealerId], references: [id], onDelete: SetNull)
+  payment Payment? @relation(fields: [paymentId], references: [id], onDelete: SetNull)
+
+  @@unique([provider, providerEventId])
+  @@index([dealerId, paymentId])
+  @@index([provider, providerReference])
+  @@index([provider, event])
+  @@index([status])
+  @@index([processedAt])
+  @@index([deletedAt])
+  @@map("payment_webhook_events")
+}
+
+model License {
+  id          String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  dealerId    String        @map("dealer_id") @db.Uuid
+  customerId  String        @map("customer_id") @db.Uuid
+  deviceId    String        @map("device_id") @db.Uuid
+  contractId  String?       @map("contract_id") @db.Uuid
+  licenseKey  String        @map("license_key")
+  keyId       String        @default("default") @map("key_id")
+  signedPayload Json        @map("signed_payload")
+  signature   String
+  signatureAlgorithm String @default("RSA-SHA256") @map("signature_algorithm")
+  status      LicenseStatus @default(pending)
+  issuedAt    DateTime?     @map("issued_at") @db.Timestamptz(6)
+  expiresAt   DateTime?     @map("expires_at") @db.Timestamptz(6)
+  revokedAt   DateTime?     @map("revoked_at") @db.Timestamptz(6)
+  metadata    Json          @default("{}")
+  createdAt   DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt   DateTime?     @map("deleted_at") @db.Timestamptz(6)
+
+  dealer   Dealer    @relation(fields: [dealerId], references: [id], onDelete: Restrict)
+  customer Customer  @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  device   Device    @relation(fields: [deviceId], references: [id], onDelete: Restrict)
+  contract Contract? @relation(fields: [contractId], references: [id], onDelete: SetNull)
+  deliveryJobs LicenseDeliveryJob[]
+
+  @@unique([dealerId, licenseKey])
+  @@unique([dealerId, id])
+  @@index([dealerId, customerId])
+  @@index([dealerId, deviceId])
+  @@index([dealerId, contractId])
+  @@index([dealerId, status])
+  @@index([dealerId, expiresAt])
+  @@index([dealerId, keyId])
+  @@index([dealerId, deletedAt])
+  @@map("licenses")
+}
+
+model LicenseDeliveryJob {
+  id          String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  dealerId    String                @map("dealer_id") @db.Uuid
+  paymentId   String                @unique @map("payment_id") @db.Uuid
+  licenseId   String?               @map("license_id") @db.Uuid
+  status      LicenseDeliveryStatus @default(queued)
+  attempts    Int                   @default(0)
+  nextRetryAt DateTime?             @map("next_retry_at") @db.Timestamptz(6)
+  lastError   String?               @map("last_error")
+  sentAt      DateTime?             @map("sent_at") @db.Timestamptz(6)
+  createdAt   DateTime              @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime              @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt   DateTime?             @map("deleted_at") @db.Timestamptz(6)
+
+  dealer  Dealer   @relation(fields: [dealerId], references: [id], onDelete: Restrict)
+  payment Payment  @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  license License? @relation(fields: [licenseId], references: [id], onDelete: SetNull)
+
+  @@index([dealerId, status])
+  @@index([dealerId, nextRetryAt])
+  @@index([dealerId, licenseId])
+  @@index([dealerId, deletedAt])
+  @@map("license_delivery_jobs")
+}
+
+model Notification {
+  id          String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  dealerId    String              @map("dealer_id") @db.Uuid
+  customerId  String?             @map("customer_id") @db.Uuid
+  userId      String?             @map("user_id") @db.Uuid
+  channel     NotificationChannel
+  status      NotificationStatus  @default(queued)
+  recipient   String
+  subject     String?
+  body        String?
+  scheduledAt DateTime?           @map("scheduled_at") @db.Timestamptz(6)
+  sentAt      DateTime?           @map("sent_at") @db.Timestamptz(6)
+  metadata    Json                @default("{}")
+  createdAt   DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime            @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt   DateTime?           @map("deleted_at") @db.Timestamptz(6)
+
+  dealer   Dealer    @relation(fields: [dealerId], references: [id], onDelete: Restrict)
+  customer Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  user     User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([dealerId, customerId])
+  @@unique([dealerId, id])
+  @@index([dealerId, userId])
+  @@index([dealerId, status])
+  @@index([dealerId, channel])
+  @@index([dealerId, scheduledAt])
+  @@index([dealerId, sentAt])
+  @@index([dealerId, deletedAt])
+  @@map("notifications")
+}
+
+model AuditLog {
+  id          String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  dealerId    String         @map("dealer_id") @db.Uuid
+  actorType   AuditActorType @map("actor_type")
+  actorUserId String?        @map("actor_user_id") @db.Uuid
+  customerId  String?        @map("customer_id") @db.Uuid
+  contractId  String?        @map("contract_id") @db.Uuid
+  deviceId    String?        @map("device_id") @db.Uuid
+  action      String
+  entityType  String         @map("entity_type")
+  entityId    String?        @map("entity_id") @db.Uuid
+  ipAddress   String?        @map("ip_address") @db.Inet
+  userAgent   String?        @map("user_agent")
+  metadata    Json           @default("{}")
+  createdAt   DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  deletedAt   DateTime?      @map("deleted_at") @db.Timestamptz(6)
+
+  dealer    Dealer    @relation(fields: [dealerId], references: [id], onDelete: Restrict)
+  actorUser User?     @relation("AuditActorUser", fields: [actorUserId], references: [id], onDelete: SetNull)
+  customer  Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  contract  Contract? @relation(fields: [contractId], references: [id], onDelete: SetNull)
+  device    Device?   @relation(fields: [deviceId], references: [id], onDelete: SetNull)
+
+  @@index([dealerId, actorUserId])
+  @@unique([dealerId, id])
+  @@index([dealerId, customerId])
+  @@index([dealerId, contractId])
+  @@index([dealerId, deviceId])
+  @@index([dealerId, action])
+  @@index([dealerId, entityType, entityId])
+  @@index([dealerId, createdAt])
+  @@index([dealerId, deletedAt])
+  @@map("audit_logs")
+}

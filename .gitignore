@@ -1,58 +1,79 @@
 # Dependencies
 node_modules/
-backend/node_modules/
-web/node_modules/
+*.pnp
+.pnp.js
 
-# Environment variables
+# Testing
+coverage/
+*.lcov
+
+# Production
+dist/
+build/
+out/
+.next/
+
+# Misc
+.DS_Store
+*.pem
+*.key
 .env
 .env.local
 .env.*.local
-backend/.env
-backend/.env.local
-
-# Logs
-logs/
 *.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+lerna-debug.log*
+.pnpm-debug.log*
 
-# Build outputs
-dist/
-build/
-bin/
-obj/
+# Editor directories and files
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+*.iml
+
+# OS
+Thumbs.db
+.thumbs.db
 
 # IDE
-.vscode/local-settings/
+.vscode/
 .idea/
 *.swp
 *.swo
 *~
 
-# Test coverage
-coverage/
-.nyc_output/
+# Generated files
+.env
+.env.local
+jwt-keys/
+rsa-keys/
 
-# OS files
-Thumbs.db
-.DS_Store
-
-# Backup/temporary files
-*.bak
-*.tmp
-.backup/
-
-# Windows app build outputs
-laptop-client/**/bin/
-laptop-client/**/obj/
-laptop-client/**/packages/
-
-# Deployment (keep locally, don't push)
-deploy/
-render.yaml
-DEPLOYMENT_CONFIGS/
+# C# / .NET
+bin/
+obj/
+.vs/
+.vscode/
+*.sln
+*.csproj.user
 
 # Database
 *.db
+*.sqlite
 *.sqlite3
+
+# Prisma
+.env
+.env.*.local
+
+# Deployment
+.vercel/
+.now/
+dist/
+build/
+.env.production.local
