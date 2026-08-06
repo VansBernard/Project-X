@@ -127,6 +127,13 @@ enum LicenseStatus {
   @@map("license_status")
 }
 
+enum LicenseType {
+  temporary
+  permanent
+
+  @@map("license_type")
+}
+
 enum NotificationChannel {
   email
   sms
@@ -161,6 +168,15 @@ enum AuthTokenType {
   @@map("auth_token_type")
 }
 
+model PlatformSetting {
+  key       String   @id
+  value     Json     @default("{}")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@map("platform_settings")
+}
+
 model Dealer {
   id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name        String
@@ -174,6 +190,14 @@ model Dealer {
   suspendedAt DateTime? @map("suspended_at") @db.Timestamptz(6)
   suspendedReason String? @map("suspended_reason")
   metadata    Json      @default("{}")
+  paystackSubaccountCode String? @map("paystack_subaccount_code")
+  paystackSubaccountId String? @map("paystack_subaccount_id")
+  paystackSubaccountStatus String? @map("paystack_subaccount_status")
+  paystackSubaccountUpdatedAt DateTime? @map("paystack_subaccount_updated_at") @db.Timestamptz(6)
+  payoutMethod String? @map("payout_method")
+  paystackTransferRecipientCode String? @map("paystack_transfer_recipient_code")
+  paystackTransferRecipientStatus String? @map("paystack_transfer_recipient_status")
+  paystackTransferRecipientUpdatedAt DateTime? @map("paystack_transfer_recipient_updated_at") @db.Timestamptz(6)
   createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt   DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
   deletedAt   DateTime? @map("deleted_at") @db.Timestamptz(6)
@@ -576,13 +600,14 @@ model License {
   dealerId    String        @map("dealer_id") @db.Uuid
   customerId  String        @map("customer_id") @db.Uuid
   deviceId    String        @map("device_id") @db.Uuid
-  contractId  String?       @map("contract_id") @db.Uuid
+  contractId  String        @map("contract_id") @db.Uuid
   licenseKey  String        @map("license_key")
   keyId       String        @default("default") @map("key_id")
   signedPayload Json        @map("signed_payload")
   signature   String
   signatureAlgorithm String @default("RSA-SHA256") @map("signature_algorithm")
   status      LicenseStatus @default(pending)
+  licenseType LicenseType   @default(temporary) @map("license_type")
   issuedAt    DateTime?     @map("issued_at") @db.Timestamptz(6)
   expiresAt   DateTime?     @map("expires_at") @db.Timestamptz(6)
   revokedAt   DateTime?     @map("revoked_at") @db.Timestamptz(6)
@@ -594,7 +619,7 @@ model License {
   dealer   Dealer    @relation(fields: [dealerId], references: [id], onDelete: Restrict)
   customer Customer  @relation(fields: [customerId], references: [id], onDelete: Restrict)
   device   Device    @relation(fields: [deviceId], references: [id], onDelete: Restrict)
-  contract Contract? @relation(fields: [contractId], references: [id], onDelete: SetNull)
+  contract Contract  @relation(fields: [contractId], references: [id], onDelete: Restrict)
   deliveryJobs LicenseDeliveryJob[]
 
   @@unique([dealerId, licenseKey])
