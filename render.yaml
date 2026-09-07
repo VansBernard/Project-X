@@ -21,10 +21,7 @@ services:
           name: project-x-db
           property: connectionString
       - key: WEB_ORIGIN
-        fromService:
-          type: web
-          name: project-x-admin
-          property: url
+        sync: false
       - key: PAYMENT_PORTAL_BASE_URL
         sync: false
       - key: JWT_ACCESS_SECRET
@@ -68,10 +65,7 @@ services:
     staticPublishPath: apps/admin/dist
     envVars:
       - key: VITE_API_URL
-        fromService:
-          type: web
-          name: project-x-api
-          property: url
+        sync: false
       - key: VITE_DEALER_SLUG
         sync: false
     routes:
