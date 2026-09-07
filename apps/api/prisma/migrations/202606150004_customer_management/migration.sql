@@ -1,14 +1,14 @@
 ALTER TABLE customers
-  ADD COLUMN full_name text,
-  ADD COLUMN national_id text,
-  ADD COLUMN emergency_contact jsonb NOT NULL DEFAULT '{}'::jsonb;
+  ADD COLUMN IF NOT EXISTS full_name text,
+  ADD COLUMN IF NOT EXISTS national_id text,
+  ADD COLUMN IF NOT EXISTS emergency_contact jsonb NOT NULL DEFAULT '{}'::jsonb;
 
 UPDATE customers
 SET full_name = trim(first_name || ' ' || last_name)
 WHERE full_name IS NULL;
 
-CREATE UNIQUE INDEX customers_dealer_id_national_id_key ON customers(dealer_id, national_id);
-CREATE INDEX customers_dealer_id_full_name_idx ON customers(dealer_id, full_name);
+CREATE UNIQUE INDEX IF NOT EXISTS customers_dealer_id_national_id_key ON customers(dealer_id, national_id);
+CREATE INDEX IF NOT EXISTS customers_dealer_id_full_name_idx ON customers(dealer_id, full_name);
 
 INSERT INTO permissions (dealer_id, key, name, description)
 SELECT d.id, permission_key, permission_name, permission_description
@@ -26,4 +26,3 @@ JOIN permissions p ON p.dealer_id = r.dealer_id
 WHERE r.name IN ('Super Admin', 'Dealer', 'Sales Agent')
   AND p.key = 'customers:history:read'
 ON CONFLICT (dealer_id, role_id, permission_id) DO NOTHING;
-

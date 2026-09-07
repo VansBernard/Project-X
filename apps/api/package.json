@@ -10,9 +10,16 @@
     "lint": "tsc -p tsconfig.json --noEmit",
     "test": "npm run build && node --test \"dist/**/*.test.js\"",
     "prisma:migrate": "prisma migrate dev --schema prisma/schema.prisma",
+    "prisma:migrate:deploy": "prisma migrate deploy --schema prisma/schema.prisma",
     "prisma:generate": "prisma generate",
     "prisma:validate": "prisma validate --schema prisma/schema.prisma",
-    "prisma:studio": "prisma studio --schema prisma/schema.prisma"
+    "prisma:studio": "prisma studio --schema prisma/schema.prisma",
+    "db:repair-auth": "node repair-auth-schema.mjs",
+    "db:repair-customer": "node repair-customer-emergency-contact.mjs",
+    "db:license-triggers": "node scripts/ensure-license-triggers.mjs",
+    "reconcile:licenses": "npx tsx scripts/run-license-reconciliation.mjs",
+    "reconcile:licenses:apply": "npx tsx scripts/run-license-reconciliation.mjs --apply",
+    "seed": "tsx seed.ts"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",
@@ -20,10 +27,11 @@
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
-    "express": "^4.21.2",
+    "express": "^4.22.2",
     "helmet": "^8.0.0",
     "jsonwebtoken": "^9.0.2",
-    "nodemailer": "^9.0.0",
+    "nodemailer": "^9.0.5",
+    "pg": "^8.22.0",
     "zod": "^3.24.1"
   },
   "devDependencies": {

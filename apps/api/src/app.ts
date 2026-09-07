@@ -7,21 +7,27 @@ import { errorMiddleware } from "./middleware/error.middleware.js";
 import { authRouter } from "./modules/auth/auth.routes.js";
 import { contractManagementRouter } from "./modules/contracts/contract-management.routes.js";
 import { customerManagementRouter } from "./modules/customers/customer-management.routes.js";
+import { dashboardRouter } from "./modules/dashboard/index.js";
 import { dealerManagementRouter } from "./modules/dealers/dealer-management.routes.js";
 import { licenseRouter } from "./modules/licenses/license.routes.js";
-import { paystackRouter, paystackWebhookRouter } from "./modules/payments/paystack.routes.js";
+import { recoveryRouter } from "./modules/recovery/recovery.routes.js";
+import { notificationsRouter } from "./modules/notifications/notifications.routes.js";
+import { paymentPortalRouter, paystackRouter, paystackWebhookRouter } from "./modules/payments/paystack.routes.js";
 
 export function createApp() {
   const app = express();
 
   app.use(helmet());
+  const allowedOrigins = env.WEB_ORIGIN;
+
   app.use(
     cors({
-      origin: env.WEB_ORIGIN,
+      origin: allowedOrigins,
       credentials: true
     })
   );
   app.use(cookieParser());
+  app.use(paymentPortalRouter);
 
   app.use("/api/v1", paystackWebhookRouter);
 
@@ -32,10 +38,13 @@ export function createApp() {
   });
 
   app.use("/api/v1/auth", authRouter);
+  app.use("/api/v1", dashboardRouter);
   app.use("/api/v1", contractManagementRouter);
   app.use("/api/v1", customerManagementRouter);
   app.use("/api/v1", dealerManagementRouter);
   app.use("/api/v1", licenseRouter);
+  app.use("/api/v1", recoveryRouter);
+  app.use("/api/v1", notificationsRouter);
   app.use("/api/v1", paystackRouter);
   app.use(errorMiddleware);
 

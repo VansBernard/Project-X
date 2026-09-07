@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Login | PayGo Dealer</title>
+<!-- Google Fonts: Inter and Hanken Grotesk -->
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;600;700;800&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols Outlined -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "error-red": "#ba1a1a",
+                        "secondary": "#006c49",
+                        "tertiary": "#593600",
+                        "on-primary-fixed-variant": "#003ea8",
+                        "surface-container-highest": "#d3e3ff",
+                        "primary": "#003594",
+                        "on-secondary-fixed": "#002113",
+                        "surface-variant": "#d3e3ff",
+                        "success-green": "#006c49",
+                        "warning-amber": "#784b00",
+                        "secondary-container": "#9af2c5",
+                        "on-tertiary-fixed": "#2a1700",
+                        "on-secondary-fixed-variant": "#005236",
+                        "on-secondary": "#ffffff",
+                        "tertiary-fixed": "#ffddb7",
+                        "inverse-primary": "#b4c5ff",
+                        "background": "#f8f9ff",
+                        "on-surface-variant": "#434655",
+                        "outline": "#737685",
+                        "on-surface": "#0b1c30",
+                        "on-tertiary-fixed-variant": "#653e00",
+                        "secondary-fixed": "#9df4c8",
+                        "on-error-container": "#93000a",
+                        "error-container": "#ffdad6",
+                        "surface-container-lowest": "#ffffff",
+                        "outline-variant": "#c3c6d6",
+                        "surface-container": "#e6eeff",
+                        "inverse-surface": "#213146",
+                        "inverse-on-surface": "#ebf1ff",
+                        "tertiary-container": "#784b00",
+                        "surface-dim": "#cbdbf6",
+                        "surface": "#f8f9ff",
+                        "on-primary-container": "#b8c8ff",
+                        "on-tertiary": "#ffffff",
+                        "surface-container-low": "#eff4ff",
+                        "on-tertiary-container": "#fdbe6e",
+                        "primary-fixed": "#dbe1ff",
+                        "tertiary-fixed-dim": "#fabb6b",
+                        "primary-container": "#004ac6",
+                        "primary-fixed-dim": "#b4c5ff",
+                        "secondary-fixed-dim": "#81d8ad",
+                        "surface-tint": "#1b55d0",
+                        "surface-container-high": "#dde9ff",
+                        "on-secondary-container": "#0c714d",
+                        "on-primary": "#ffffff",
+                        "on-primary-fixed": "#00174b",
+                        "on-error": "#ffffff",
+                        "on-background": "#0b1c30",
+                        "surface-bright": "#f8f9ff",
+                        "error": "#ba1a1a"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "stack-gap": "1rem",
+                        "sidebar-width": "260px",
+                        "section-gap": "2rem",
+                        "margin-desktop": "2rem",
+                        "margin-mobile": "1rem",
+                        "gutter": "1.5rem"
+                    },
+                    "fontFamily": {
+                        "headline-md": ["Hanken Grotesk"],
+                        "stat-lg": ["Hanken Grotesk"],
+                        "label-sm": ["Inter"],
+                        "body-md": ["Inter"],
+                        "label-md": ["Inter"],
+                        "headline-sm": ["Hanken Grotesk"],
+                        "display-lg": ["Hanken Grotesk"],
+                        "body-lg": ["Inter"]
+                    },
+                    "fontSize": {
+                        "headline-md": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                        "stat-lg": ["28px", {"lineHeight": "34px", "fontWeight": "700"}],
+                        "label-sm": ["10px", {"lineHeight": "14px", "letterSpacing": "0.1em", "fontWeight": "700"}],
+                        "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                        "label-md": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                        "headline-sm": ["18px", {"lineHeight": "24px", "fontWeight": "600"}],
+                        "display-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            display: inline-block;
+            vertical-align: middle;
+        }
+        .fintech-pattern {
+            background-color: #f8f9ff;
+            background-image: radial-gradient(#d3e3ff 0.5px, transparent 0.5px);
+            background-size: 24px 24px;
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(12px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03), 0 1px 2px rgba(0, 0, 0, 0.02);
+        }
+        .btn-primary-interaction:active {
+            transform: scale(0.98);
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface font-body-md min-h-screen flex flex-col md:flex-row overflow-hidden">
+<!-- Left Section: Branding & Atmospheric Visual (Desktop only) -->
+<section class="hidden md:flex md:w-1/2 lg:w-3/5 bg-primary relative items-center justify-center p-margin-desktop overflow-hidden">
+<!-- Background Animation Shell -->
+<div class="absolute inset-0 opacity-40 mix-blend-overlay">
+
+</div>
+<!-- Background Pattern Overlay -->
+<div class="absolute inset-0 bg-gradient-to-br from-primary via-primary-container to-on-primary-fixed-variant"></div>
+<!-- Content Content -->
+<div class="relative z-10 max-w-lg text-on-primary text-center">
+<div class="mb-8 inline-flex p-4 rounded-xl bg-white/10 backdrop-blur-md border border-white/20">
+<span class="material-symbols-outlined text-[48px]" style="font-variation-settings: 'FILL' 1;">account_balance</span>
+</div>
+<h1 class="font-display-lg text-display-lg mb-4 text-white">Institutional Grade Financial Operations</h1>
+<p class="font-body-lg text-body-lg text-primary-fixed opacity-90 leading-relaxed">
+                Empowering dealers with secure, high-density dashboarding and real-time transaction oversight. Experience the future of PayGo institutional management.
+            </p>
+<div class="mt-12 flex justify-center gap-8">
+<div class="flex flex-col items-center">
+<span class="font-stat-lg text-stat-lg text-white">99.9%</span>
+<span class="font-label-md text-label-md text-primary-fixed uppercase tracking-wider">Uptime</span>
+</div>
+<div class="w-px h-12 bg-white/20"></div>
+<div class="flex flex-col items-center">
+<span class="font-stat-lg text-stat-lg text-white">256-bit</span>
+<span class="font-label-md text-label-md text-primary-fixed uppercase tracking-wider">Encryption</span>
+</div>
+<div class="w-px h-12 bg-white/20"></div>
+<div class="flex flex-col items-center">
+<span class="font-stat-lg text-stat-lg text-white">24/7</span>
+<span class="font-label-md text-label-md text-primary-fixed uppercase tracking-wider">Support</span>
+</div>
+</div>
+</div>
+<!-- Decorative Image -->
+<div class="absolute bottom-[-10%] right-[-5%] w-2/3 h-2/3 opacity-20 pointer-events-none">
+<div class="bg-cover bg-center w-full h-full rounded-full" data-alt="A sophisticated architectural photograph of a modern financial center building with clean glass lines and professional blue and white lighting, emphasizing stability and institutional trust." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDfzwGW02gybwZrs2YJTRUjc1J3a7XF_ynDYOtqQMZQb3rr6lqBQ46hOucOlGIQ7naChzg1dzBlwDBVO1V8c6SaIlu82dIyZYQKTB1aRHs4NG9h75ZIM7wZaCcngB0y-Sgs1--HJkS4Kd3TJrrNkokV_0SDpfwD7fnLFtOD01W2o1hrFiFx1YCRFJuC8GnnNvDhIuakXCDx_PSljg-_y41AkRpJX96CB9QV6Aegk8n504hqSSDO5at6ZA')"></div>
+</div>
+</section>
+<!-- Right Section: Login Form -->
+<main class="w-full md:w-1/2 lg:w-2/5 fintech-pattern flex items-center justify-center p-margin-mobile md:p-margin-desktop overflow-y-auto">
+<div class="w-full max-w-md">
+<!-- Mobile Logo -->
+<div class="flex items-center gap-3 mb-10 md:hidden">
+<div class="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
+<span class="material-symbols-outlined text-white" style="font-variation-settings: 'FILL' 1;">account_balance</span>
+</div>
+<span class="font-headline-md text-headline-md text-primary font-bold">PayGo Dealer</span>
+</div>
+<!-- Login Card -->
+<div class="glass-card rounded-xl p-8 md:p-10 border border-outline-variant/30">
+<header class="mb-8">
+<div class="hidden md:flex items-center gap-2 mb-6">
+<span class="material-symbols-outlined text-primary text-[32px]" style="font-variation-settings: 'FILL' 1;">account_balance</span>
+<span class="font-headline-md text-headline-md text-primary font-bold">PayGo Dealer</span>
+</div>
+<h2 class="font-headline-md text-headline-md text-on-surface mb-2">Sign in to your account</h2>
+<p class="font-body-md text-body-md text-on-surface-variant">Access your dealer dashboard and operations.</p>
+</header>
+<form class="space-y-6" onsubmit="event.preventDefault();">
+<!-- Email Field -->
+<div class="space-y-2">
+<label class="block font-label-md text-label-md text-on-surface uppercase tracking-wider" for="email">Email address</label>
+<div class="relative">
+<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+<span class="material-symbols-outlined text-outline text-[20px]">mail</span>
+</div>
+<input class="block w-full pl-10 pr-3 py-3 bg-surface-container-low border-0 rounded-lg text-on-surface placeholder:text-outline focus:ring-2 focus:ring-primary transition-all duration-200" id="email" name="email" placeholder="name@company.com" required="" type="email"/>
+</div>
+</div>
+<!-- Password Field -->
+<div class="space-y-2">
+<div class="flex justify-between items-center">
+<label class="block font-label-md text-label-md text-on-surface uppercase tracking-wider" for="password">Password</label>
+<a class="font-label-md text-label-md text-primary hover:underline" href="#">Forgot password?</a>
+</div>
+<div class="relative">
+<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+<span class="material-symbols-outlined text-outline text-[20px]">lock</span>
+</div>
+<input class="block w-full pl-10 pr-10 py-3 bg-surface-container-low border-0 rounded-lg text-on-surface placeholder:text-outline focus:ring-2 focus:ring-primary transition-all duration-200" id="password" name="password" placeholder="••••••••" required="" type="password"/>
+<button class="absolute inset-y-0 right-0 pr-3 flex items-center text-outline hover:text-on-surface-variant" onclick="togglePasswordVisibility()" type="button">
+<span class="material-symbols-outlined text-[20px]" id="password-toggle-icon">visibility</span>
+</button>
+</div>
+</div>
+<!-- Remember Me -->
+<div class="flex items-center">
+<input class="h-4 w-4 text-primary border-outline-variant rounded focus:ring-primary bg-surface-container-low" id="remember-me" name="remember-me" type="checkbox"/>
+<label class="ml-2 block font-body-md text-body-md text-on-surface-variant" for="remember-me">
+                            Keep me signed in for 30 days
+                        </label>
+</div>
+<!-- Sign In Action -->
+<button class="w-full bg-primary text-on-primary py-3.5 px-4 rounded-xl font-body-md font-semibold shadow-sm hover:bg-primary-container hover:shadow-md transition-all duration-200 btn-primary-interaction flex items-center justify-center gap-2" type="submit">
+                        Sign In
+                        <span class="material-symbols-outlined text-[18px]">login</span>
+</button>
+</form>
+<div class="mt-8 pt-8 border-t border-outline-variant/30 text-center">
+<p class="font-body-md text-body-md text-on-surface-variant">
+                        New to PayGo Institutional? 
+                        <a class="text-primary font-semibold hover:underline ml-1" href="#">Sign up for an account</a>
+</p>
+</div>
+</div>
+<!-- Footer Links -->
+<footer class="mt-12 flex flex-wrap justify-center gap-6 text-on-surface-variant font-label-md text-label-md opacity-60">
+<a class="hover:text-primary transition-colors uppercase tracking-widest" href="#">Privacy Policy</a>
+<a class="hover:text-primary transition-colors uppercase tracking-widest" href="#">Terms of Service</a>
+<a class="hover:text-primary transition-colors uppercase tracking-widest" href="#">Help Center</a>
+<span class="w-full text-center mt-2">© 2024 PayGo Institutional.</span>
+</footer>
+</div>
+</main>
+<script>
+        function togglePasswordVisibility() {
+            const passwordInput = document.getElementById('password');
+            const toggleIcon = document.getElementById('password-toggle-icon');
+            
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                toggleIcon.innerText = 'visibility_off';
+            } else {
+                passwordInput.type = 'password';
+                toggleIcon.innerText = 'visibility';
+            }
+        }
+
+        // Simple interaction for the form button
+        document.querySelector('form').addEventListener('submit', (e) => {
+            const btn = e.target.querySelector('button[type="submit"]');
+            const originalContent = btn.innerHTML;
+            btn.innerHTML = `<span class="inline-block animate-spin material-symbols-outlined text-[18px]">progress_activity</span> Authenticating...`;
+            btn.disabled = true;
+            
+            // Artificial delay to simulate network request
+            setTimeout(() => {
+                btn.innerHTML = `<span class="material-symbols-outlined text-[18px]">check_circle</span> Welcome back`;
+                btn.classList.replace('bg-primary', 'bg-success-green');
+                
+                setTimeout(() => {
+                    // In a real app, you would redirect here
+                    // window.location.href = '/dashboard';
+                    btn.innerHTML = originalContent;
+                    btn.disabled = false;
+                    btn.classList.replace('bg-success-green', 'bg-primary');
+                }, 1500);
+            }, 2000);
+        });
+
+        // Add subtle mouse-follow gradient effect on the card
+        const card = document.querySelector('.glass-card');
+        document.addEventListener('mousemove', (e) => {
+            if (window.innerWidth > 768) {
+                const rect = card.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                
+                // Only apply if near the card
+                if (x > -100 && x < rect.width + 100 && y > -100 && y < rect.height + 100) {
+                    card.style.backgroundImage = `radial-gradient(circle at ${x}px ${y}px, rgba(219, 225, 255, 0.2) 0%, rgba(255, 255, 255, 0) 60%)`;
+                }
+            }
+        });
+    </script>
+</body></html>

@@ -13,6 +13,7 @@ export function Button({
   disabled = false,
   className = '',
   children,
+  type = 'button',
   ...props
 }: ButtonProps) {
   const baseClasses = 'font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed';
@@ -32,6 +33,7 @@ export function Button({
   return (
     <button
       {...props}
+      type={type}
       disabled={disabled || loading}
       className={`${baseClasses} ${variantClasses[variant]} ${sizeClasses[size]} ${className}`}
     >

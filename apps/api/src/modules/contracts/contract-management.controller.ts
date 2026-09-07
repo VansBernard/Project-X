@@ -2,6 +2,8 @@ import type { Request, Response } from "express";
 import { AppError } from "../../middleware/error.middleware.js";
 import { contractManagementService } from "./contract-management.service.js";
 import type {
+  CancelPlanDecisionInput,
+  CancelPlanRequestInput,
   CreateContractInput,
   ListContractsQuery,
   UpdateContractStatusInput
@@ -33,6 +35,25 @@ export const contractManagementController = {
 
   async updateStatus(req: Request<{ contractId: string }, object, UpdateContractStatusInput>, res: Response) {
     const contract = await contractManagementService.updateStatus(
+      dealerIdFromAuth(req),
+      req.params.contractId,
+      req.body
+    );
+    return res.status(200).json({ data: contract });
+  },
+
+  async requestCancellation(req: Request<object, object, CancelPlanRequestInput>, res: Response) {
+    const contract = await contractManagementService.requestCancellation(dealerIdFromAuth(req), req.body);
+    return res.status(202).json({ data: contract });
+  },
+
+  async cancellationRequest(req: Request<{ contractId: string }>, res: Response) {
+    const request = await contractManagementService.cancellationRequest(dealerIdFromAuth(req), req.params.contractId);
+    return res.status(200).json({ data: request });
+  },
+
+  async decideCancellation(req: Request<{ contractId: string }, object, CancelPlanDecisionInput>, res: Response) {
+    const contract = await contractManagementService.decideCancellation(
       dealerIdFromAuth(req),
       req.params.contractId,
       req.body

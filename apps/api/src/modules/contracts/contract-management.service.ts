@@ -1,7 +1,10 @@
 import { ContractInstallmentStatus, ContractStatus, DeviceStatus, Prisma } from "@prisma/client";
 import { AppError } from "../../middleware/error.middleware.js";
 import { prisma } from "../../lib/prisma.js";
+import { calculatePaymentSchedule } from "./payment-calculation.service.js";
 import type {
+  CancelPlanDecisionInput,
+  CancelPlanRequestInput,
   CreateContractInput,
   ListContractsQuery,
   UpdateContractStatusInput
@@ -35,6 +38,35 @@ function pageResult<T extends { id: string }>(items: T[], take: number) {
   };
 }
 
+export async function assertDealerCurrency(dealerId: string, currency: string) {
+  const dealer = await prisma.dealer.findUnique({
+    where: { id: dealerId },
+    select: { metadata: true }
+  });
+
+  if (!dealer) {
+    throw new AppError(404, "DEALER_NOT_FOUND", "Dealer not found.");
+  }
+
+  const metadata = dealer.metadata && typeof dealer.metadata === "object" && !Array.isArray(dealer.metadata)
+    ? dealer.metadata as Record<string, unknown>
+    : {};
+  const dealerCurrency = typeof metadata.currency === "string" && metadata.currency.trim().length === 3
+    ? metadata.currency.trim().toUpperCase()
+    : "NGN";
+  const requestedCurrency = currency.trim().toUpperCase();
+
+  if (requestedCurrency !== dealerCurrency) {
+    throw new AppError(
+      400,
+      "DEALER_CURRENCY_MISMATCH",
+      `This dealer account is restricted to ${dealerCurrency}. Create the contract using ${dealerCurrency}.`
+    );
+  }
+
+  return dealerCurrency;
+}
+
 function validateFinancing(input: CreateContractInput) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -48,24 +80,11 @@ function validateFinancing(input: CreateContractInput) {
   }
 
   const remainingBalance = input.devicePrice - input.deposit;
-  const scheduledTotal = input.installmentAmount * input.installmentCount;
-
   if (remainingBalance <= 0) {
     throw new AppError(400, "INVALID_REMAINING_BALANCE", "Remaining balance must be greater than zero.");
   }
 
-  if (Math.round(scheduledTotal * 100) !== Math.round(remainingBalance * 100)) {
-    throw new AppError(
-      400,
-      "INSTALLMENTS_DO_NOT_MATCH_BALANCE",
-      "Installment amount multiplied by installment count must equal the remaining balance."
-    );
-  }
-
-  return {
-    remainingBalance,
-    scheduledTotal
-  };
+  return { remainingBalance };
 }
 
 async function requireContract(dealerId: string, contractId: string) {
@@ -111,7 +130,9 @@ function assertStatusTransition(current: ContractStatus, next: ContractStatus) {
 
 export const contractManagementService = {
   async create(dealerId: string, input: CreateContractInput) {
-    const { remainingBalance, scheduledTotal } = validateFinancing(input);
+    await assertDealerCurrency(dealerId, input.currency);
+    const { remainingBalance } = validateFinancing(input);
+    const paymentSchedule = calculatePaymentSchedule(input);
 
     const [customer, device] = await Promise.all([
       prisma.customer.findFirst({
@@ -132,11 +153,11 @@ export const contractManagementService = {
       throw new AppError(404, "DEVICE_NOT_FOUND", "Device was not found.");
     }
 
-    const dueDates = Array.from({ length: input.installmentCount }, (_, index) => ({
+    const installments = paymentSchedule.installments.map((installment) => ({
       dealerId,
-      sequenceNumber: index + 1,
-      dueDate: addMonths(input.firstDueDate, index),
-      amountDue: input.installmentAmount
+      sequenceNumber: installment.sequenceNumber,
+      dueDate: installment.dueDate,
+      amountDue: installment.amountDue
     }));
 
     return prisma.$transaction(async (tx) => {
@@ -151,17 +172,17 @@ export const contractManagementService = {
           devicePrice: input.devicePrice,
           depositAmount: input.deposit,
           remainingBalance,
-          installmentAmount: input.installmentAmount,
+          installmentAmount: paymentSchedule.baseInstallmentAmount,
           principalAmount: input.devicePrice,
-          totalAmount: scheduledTotal,
+          totalAmount: paymentSchedule.totalAmount,
           amountPaid: input.deposit,
           firstDueDate: input.firstDueDate,
           nextDueDate: input.firstDueDate,
           startDate: new Date(),
-          endDate: addMonths(input.firstDueDate, input.installmentCount - 1),
-          metadata: input.metadata as Prisma.JsonObject,
+          endDate: paymentSchedule.installments[paymentSchedule.installments.length - 1].dueDate,
+          metadata: { ...input.metadata, paymentPlan: (input as unknown as { paymentPlan?: string }).paymentPlan ?? "monthly" } as Prisma.JsonObject,
           installments: {
-            create: dueDates
+            create: installments
           }
         },
         include: {
@@ -280,6 +301,76 @@ export const contractManagementService = {
         });
       }
 
+      return updated;
+    });
+  },
+
+  async requestCancellation(dealerId: string, input: CancelPlanRequestInput) {
+    const contract = await requireContract(dealerId, input.contractId);
+    const metadata = contract.metadata && typeof contract.metadata === "object" && !Array.isArray(contract.metadata)
+      ? (contract.metadata as Prisma.JsonObject)
+      : {};
+    const existingRequest = metadata.cancellationRequest;
+    if (existingRequest && typeof existingRequest === "object" && !Array.isArray(existingRequest)) {
+      if ((existingRequest as Prisma.JsonObject).status === "pending") return contract;
+    }
+
+    return prisma.contract.update({
+      where: { id: input.contractId },
+      data: {
+        metadata: {
+          ...metadata,
+          cancellationRequest: {
+            status: "pending",
+            reason: input.reason ?? null,
+            requestedAt: new Date().toISOString()
+          }
+        }
+      }
+    });
+  },
+
+  async cancellationRequest(dealerId: string, contractId: string) {
+    const contract = await requireContract(dealerId, contractId);
+    const metadata = contract.metadata && typeof contract.metadata === "object" && !Array.isArray(contract.metadata)
+      ? (contract.metadata as Prisma.JsonObject)
+      : {};
+    return metadata.cancellationRequest ?? null;
+  },
+
+  async decideCancellation(dealerId: string, contractId: string, input: CancelPlanDecisionInput) {
+    const contract = await requireContract(dealerId, contractId);
+    const metadata = contract.metadata && typeof contract.metadata === "object" && !Array.isArray(contract.metadata)
+      ? (contract.metadata as Prisma.JsonObject)
+      : {};
+    const existingRequest = metadata.cancellationRequest;
+    if (!existingRequest || typeof existingRequest !== "object" || Array.isArray(existingRequest) || (existingRequest as Prisma.JsonObject).status !== "pending") {
+      throw new AppError(409, "NO_PENDING_CANCELLATION", "There is no pending cancellation request for this contract.");
+    }
+
+    const nextMetadata: Prisma.JsonObject = {
+      ...metadata,
+      cancellationRequest: {
+        ...(existingRequest as Prisma.JsonObject),
+        status: input.decision,
+        decisionReason: input.reason ?? null,
+        decidedAt: new Date().toISOString()
+      }
+    };
+
+    if (input.decision === "rejected") {
+      return prisma.contract.update({ where: { id: contractId }, data: { metadata: nextMetadata } });
+    }
+
+    return prisma.$transaction(async (tx) => {
+      const updated = await tx.contract.update({
+        where: { id: contractId },
+        data: { status: ContractStatus.cancelled, metadata: nextMetadata }
+      });
+      await tx.contractInstallment.updateMany({
+        where: { dealerId, contractId, status: ContractInstallmentStatus.pending, deletedAt: null },
+        data: { status: ContractInstallmentStatus.cancelled }
+      });
       return updated;
     });
   },

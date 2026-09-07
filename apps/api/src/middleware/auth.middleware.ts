@@ -2,6 +2,31 @@ import type { NextFunction, Request, Response } from "express";
 import { verifyAccessToken } from "../lib/jwt.js";
 
 export function authenticate(req: Request, res: Response, next: NextFunction) {
+  const publicPaths = [
+    "/dealers/signup",
+    "/dealers/signup/confirm",
+    "/dealers/payout-banks",
+    "/dealers/payout-account/resolve",
+    "/health",
+    "/auth/login",
+    "/auth/refresh",
+    "/auth/logout",
+    "/auth/password/forgot",
+    "/auth/password/reset",
+    "/auth/email/verify",
+    "/auth/email/verification/resend"
+  ];
+  
+  // Check if the request path matches a public path
+  // Handle both "/path" and "/api/v1/path" formats
+  const pathToCheck = req.path.startsWith("/api/v1") 
+    ? req.path.substring(7) 
+    : req.path;
+  
+  if (publicPaths.includes(pathToCheck)) {
+    return next();
+  }
+
   const header = req.headers.authorization;
   const token = header?.startsWith("Bearer ") ? header.slice("Bearer ".length) : null;
 

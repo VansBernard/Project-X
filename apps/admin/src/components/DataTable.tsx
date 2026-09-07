@@ -39,7 +39,7 @@ export function DataTable<T extends { id: string }>({
   emptyMessage = 'No data available',
 }: DataTableProps<T>) {
   if (loading) return <LoadingState />;
-  if (error) return <ErrorState message={error} />;
+  if (error) return <ErrorState title="Unable to load data" description={error} />;
 
   return (
     <div className="overflow-x-auto">

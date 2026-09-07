@@ -117,7 +117,7 @@ npm run check
 
 ## Desktop Notes
 
-The desktop client is planned as WPF .NET 8 MVVM. Current desktop code contains licensing and offline validation pieces only. Full WPF app shell and project build wiring are not complete yet.
+The desktop client is planned as WPF .NET 8 MVVM. Current desktop prototype lives in `apps/DesktopApp1/DesktopAppFresh`; it contains licensing and offline validation pieces, but full production build wiring and the intended `apps/desktop/ProjectX.Desktop` structure are not complete yet.
 
 ## Troubleshooting
 

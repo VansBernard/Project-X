@@ -1,401 +1,368 @@
-import { type FormEvent, useState } from 'react';
-import { Button } from '../components/Button';
+import { useEffect, useState } from 'react';
+import { Sidebar, Header, MainLayout } from '../components/Layout';
 import { Card } from '../components/Card';
-import { Input } from '../components/Input';
-import { PageHeader } from '../components/PageHeader';
-import { DashboardLayout } from '../layouts/DashboardLayout';
-import {
-  apiClient,
-  type DeviceActiveLicenseResult,
-  type LicenseDetail,
-  type LicensePayload,
-  type LicenseVerificationResult,
-} from '../lib/api';
+import { Button } from '../components/UI';
+import { FormField, SelectField } from '../components/Form';
+import { StatusBadge } from '../components/StatusBadge';
+import { TableSkeleton } from '../components/TableSkeleton';
+import { apiClient, type DeviceListItem, type LicenseDetail } from '../lib/api';
+import noDataImg from '../../No data.jpg';
 
-function getErrorMessage(error: unknown) {
-  if (error && typeof error === 'object' && 'message' in error && typeof error.message === 'string') {
-    return error.message;
-  }
-
-  return 'An unexpected error occurred.';
-}
-
-function formatJson(value: unknown) {
-  try {
-    return JSON.stringify(value, null, 2);
-  } catch {
-    return String(value);
-  }
-}
-
-function prettyDate(date?: string | null) {
-  return date ? new Date(date).toLocaleString() : '-';
-}
-
-function DetailItem({ label, value }: { label: string; value?: string | number | boolean | null }) {
-  return (
-    <div>
-      <p className="text-sm text-gray-500">{label}</p>
-      <p className="break-all text-sm font-medium text-gray-900">{value === undefined || value === null || value === '' ? '-' : String(value)}</p>
-    </div>
-  );
-}
-
-function LicenseSummary({ license }: { license: LicenseDetail }) {
-  return (
-    <div className="space-y-4 rounded-lg border border-gray-200 bg-gray-50 p-4">
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <DetailItem label="License ID" value={license.id} />
-        <DetailItem label="Status" value={license.status} />
-        <DetailItem label="Device ID" value={license.deviceId ?? license.device?.id} />
-        <DetailItem label="Contract ID" value={license.contractId ?? license.contract?.id} />
-        <DetailItem label="Issued" value={prettyDate(license.issuedAt)} />
-        <DetailItem label="Expires" value={prettyDate(license.expiresAt)} />
-      </div>
-
-      <div>
-        <p className="text-sm text-gray-500">Signed Payload</p>
-        <pre className="mt-2 overflow-x-auto rounded-lg bg-white p-3 text-xs text-gray-700">
-          {formatJson(license.signedPayload)}
-        </pre>
-      </div>
-
-      <div>
-        <p className="text-sm text-gray-500">Signature</p>
-        <p className="mt-2 break-all rounded-lg bg-white p-3 text-xs text-gray-700">{license.signature || '-'}</p>
-      </div>
-    </div>
-  );
-}
-
-function VerificationSummary({ result }: { result: LicenseVerificationResult }) {
-  return (
-    <div className="space-y-3 rounded-lg border border-gray-200 bg-gray-50 p-4">
-      <p className="text-sm font-semibold text-gray-900">Verification Result</p>
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <DetailItem label="Valid" value={result.valid ? 'Yes' : 'No'} />
-        <DetailItem label="Signature Valid" value={result.signatureValid ? 'Yes' : 'No'} />
-        <DetailItem label="Issued" value={result.issued ? 'Yes' : 'No'} />
-        <DetailItem label="Not Expired" value={result.notExpired ? 'Yes' : 'No'} />
-        <DetailItem label="Device ID" value={result.deviceId} />
-        <DetailItem label="Contract ID" value={result.contractId} />
-        <DetailItem label="Expires" value={prettyDate(result.expiresAt)} />
-      </div>
-    </div>
-  );
-}
-
-function DeviceLicenseSummary({ result }: { result: DeviceActiveLicenseResult }) {
-  return (
-    <div className="space-y-4 rounded-lg border border-gray-200 bg-gray-50 p-4">
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <DetailItem label="Unlock Allowed" value={result.unlockAllowed ? 'Yes' : 'No'} />
-        <DetailItem label="License ID" value={result.license?.id} />
-        <DetailItem label="Status" value={result.license?.status} />
-        <DetailItem label="Expires" value={prettyDate(result.license?.expiresAt)} />
-      </div>
-
-      {result.verification && <VerificationSummary result={result.verification} />}
-      {result.license && <LicenseSummary license={result.license} />}
-    </div>
-  );
-}
+const dateFormatter = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 
 export function LicensesPage() {
-  const [issueDeviceId, setIssueDeviceId] = useState('');
-  const [issueContractId, setIssueContractId] = useState('');
-  const [issueExpiresAt, setIssueExpiresAt] = useState(() => {
-    const tomorrow = new Date(Date.now() + 1000 * 60 * 60 * 24);
-    return tomorrow.toISOString().slice(0, 10);
-  });
-  const [issueMetadata, setIssueMetadata] = useState('{}');
+  const [license, setLicense] = useState<LicenseDetail | null>(null);
+  const [deviceLicense, setDeviceLicense] = useState<LicenseDetail | null>(null);
+  const [devices, setDevices] = useState<DeviceListItem[]>([]);
+  const [selectedDeviceId, setSelectedDeviceId] = useState('');
+  const [selectedContractId, setSelectedContractId] = useState('');
+  const [licenseType, setLicenseType] = useState<'temporary' | 'permanent'>('temporary');
+  const [expiresAt, setExpiresAt] = useState(new Date(Date.now() + 1000 * 60 * 60 * 24 * 30).toISOString().slice(0, 10));
+  const [metadata, setMetadata] = useState('');
   const [issueLoading, setIssueLoading] = useState(false);
   const [issueError, setIssueError] = useState<string | null>(null);
-  const [issuedLicense, setIssuedLicense] = useState<LicenseDetail | null>(null);
-
-  const [lookupLicenseId, setLookupLicenseId] = useState('');
-  const [lookupLicenseLoading, setLookupLicenseLoading] = useState(false);
-  const [lookupLicenseError, setLookupLicenseError] = useState<string | null>(null);
-  const [licenseDetail, setLicenseDetail] = useState<LicenseDetail | null>(null);
-
-  const [deviceIdLookup, setDeviceIdLookup] = useState('');
-  const [deviceLicenseLoading, setDeviceLicenseLoading] = useState(false);
-  const [deviceLicenseError, setDeviceLicenseError] = useState<string | null>(null);
-  const [deviceLicenseResult, setDeviceLicenseResult] = useState<DeviceActiveLicenseResult | null>(null);
-
   const [verifyPayload, setVerifyPayload] = useState('');
   const [verifySignature, setVerifySignature] = useState('');
+  const [verifyResult, setVerifyResult] = useState<string | null>(null);
+  const [lookupError, setLookupError] = useState<string | null>(null);
+  const [lookupLoading, setLookupLoading] = useState(false);
   const [verifyLoading, setVerifyLoading] = useState(false);
-  const [verifyError, setVerifyError] = useState<string | null>(null);
-  const [verifyResult, setVerifyResult] = useState<LicenseVerificationResult | null>(null);
+  const [licenses, setLicenses] = useState<LicenseDetail[]>([]);
+  const [licensesLoading, setLicensesLoading] = useState(false);
+  const [licensesError, setLicensesError] = useState<string | null>(null);
 
-  const handleIssueLicense = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setIssueLoading(true);
-    setIssueError(null);
-    setIssuedLicense(null);
+  const loadLicenses = async () => {
+    setLicensesLoading(true);
+    setLicensesError(null);
 
-    let metadata: Record<string, unknown> = {};
     try {
-      if (issueMetadata.trim()) {
-        metadata = JSON.parse(issueMetadata);
-      }
-    } catch {
-      setIssueError('Metadata must be valid JSON.');
-      setIssueLoading(false);
-      return;
+      const response = await apiClient.listLicenses({ take: 100 });
+      setLicenses(response.data);
+    } catch (error) {
+      setLicensesError((error as Error)?.message || 'Failed to load licenses.');
+      setLicenses([]);
+    } finally {
+      setLicensesLoading(false);
     }
+  };
 
-    try {
-      const expiresAt = new Date(`${issueExpiresAt}T23:59:59.999Z`).toISOString();
-      const response = await apiClient.issueLicense({
-        deviceId: issueDeviceId.trim(),
-        contractId: issueContractId.trim(),
-        expiresAt,
-        metadata,
+  useEffect(() => {
+    let cancelled = false;
+
+    apiClient.listDevices({ take: 100 })
+      .then((response) => {
+        if (!cancelled) {
+          setDevices(response.data);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setDevices([]);
       });
 
-      setIssuedLicense(response.data);
-      setIssueDeviceId('');
-      setIssueContractId('');
-      setIssueMetadata('{}');
+    loadLicenses();
+
+    return () => { cancelled = true; };
+  }, []);
+
+  const issueSelectedLicense = async (kind: 'temporary' | 'permanent') => {
+    setIssueLoading(true);
+    setIssueError(null);
+    setLicenseType(kind);
+
+    try {
+      const result = await apiClient.issueLicense({
+        deviceId: selectedDeviceId,
+        contractId: selectedContractId,
+        licenseType: kind,
+        expiresAt: kind === 'temporary' ? expiresAt : undefined,
+        metadata: metadata ? JSON.parse(metadata) : {},
+      });
+      setLicense(result.data);
     } catch (error) {
-      setIssueError(getErrorMessage(error));
+      setIssueError((error as Error)?.message || 'Failed to issue license.');
     } finally {
       setIssueLoading(false);
     }
   };
 
-  const handleLookupLicense = async () => {
-    setLookupLicenseLoading(true);
-    setLookupLicenseError(null);
-    setLicenseDetail(null);
+  const handleLookup = async () => {
+    if (!selectedDeviceId) return;
+    setLookupLoading(true);
+    setLookupError(null);
+    setDeviceLicense(null);
 
     try {
-      const response = await apiClient.getLicense(lookupLicenseId.trim());
-      setLicenseDetail(response.data);
+      const result = await apiClient.getDeviceActiveLicense(selectedDeviceId);
+      setDeviceLicense(result.data.license);
     } catch (error) {
-      setLookupLicenseError(getErrorMessage(error));
+      setLookupError((error as Error)?.message || 'Failed to lookup device license.');
     } finally {
-      setLookupLicenseLoading(false);
+      setLookupLoading(false);
     }
   };
 
-  const handleLookupDeviceLicense = async () => {
-    setDeviceLicenseLoading(true);
-    setDeviceLicenseError(null);
-    setDeviceLicenseResult(null);
-
-    try {
-      const response = await apiClient.getDeviceActiveLicense(deviceIdLookup.trim());
-      setDeviceLicenseResult(response.data);
-    } catch (error) {
-      setDeviceLicenseError(getErrorMessage(error));
-    } finally {
-      setDeviceLicenseLoading(false);
-    }
-  };
-
-  const handleVerifyLicense = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+  const handleVerify = async () => {
     setVerifyLoading(true);
-    setVerifyError(null);
     setVerifyResult(null);
 
-    let payload: LicensePayload;
     try {
-      payload = JSON.parse(verifyPayload);
-    } catch {
-      setVerifyError('Payload must be valid JSON.');
-      setVerifyLoading(false);
-      return;
-    }
-
-    try {
-      const response = await apiClient.verifyLicense(payload, verifySignature.trim());
-      setVerifyResult(response.data);
+      const payload = JSON.parse(verifyPayload);
+      const result = await apiClient.verifyLicense(payload, verifySignature);
+      setVerifyResult(result.data.valid ? 'License is valid' : 'License is invalid');
     } catch (error) {
-      setVerifyError(getErrorMessage(error));
+      setVerifyResult((error as Error)?.message || 'Verification failed.');
     } finally {
       setVerifyLoading(false);
     }
   };
 
   return (
-    <DashboardLayout>
-      <div className="space-y-6">
-        <PageHeader
-          title="Licenses & Unlock Tokens"
-          description="Issue, verify, and inspect signed licenses for devices."
-        />
+    <>
+      <Sidebar />
+      <Header title="Licenses" subtitle="Issue, verify, and inspect device unlock licenses." />
+      <MainLayout>
+        <div className="space-y-6">
+          <section className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-sm text-slate-500">Issue licenses for devices and verify payload signatures from the backend.</p>
+            </div>
+          </section>
 
-        <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-          <Card>
-            <div className="space-y-4">
+          <div className="grid gap-6 xl:grid-cols-[1.4fr_1fr]">
+            <Card className="space-y-6 p-6">
               <div>
-                <h2 className="text-xl font-semibold text-gray-900">Issue License</h2>
-                <p className="mt-1 text-sm text-gray-500">Create a signed license for an existing active or completed contract.</p>
+                <h2 className="text-lg font-semibold text-slate-900">Issue license</h2>
+                <p className="mt-2 text-sm text-slate-600">Create a signed unlock license for a device or contract.</p>
               </div>
 
-              <form className="space-y-4" onSubmit={handleIssueLicense}>
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                  <Input
-                    label="Device ID"
-                    value={issueDeviceId}
-                    onChange={(event) => setIssueDeviceId(event.target.value)}
-                    placeholder="Device UUID"
-                    required
-                  />
-                  <Input
-                    label="Contract ID"
-                    value={issueContractId}
-                    onChange={(event) => setIssueContractId(event.target.value)}
-                    placeholder="Contract UUID"
-                    required
-                  />
-                </div>
+              <div className="grid gap-4 lg:grid-cols-2">
+                <SelectField
+                  label="Device"
+                  name="deviceId"
+                  value={selectedDeviceId}
+                  onChange={setSelectedDeviceId}
+                  options={[{ value: '', label: 'Select device' }, ...devices.map((device) => ({ value: device.id, label: device.serialNumber || `${device.manufacturer ?? ''} ${device.model ?? ''}`.trim() }))]}
+                />
+                <FormField
+                  label="Contract ID"
+                  name="contractId"
+                  value={selectedContractId}
+                  onChange={setSelectedContractId}
+                  placeholder="Enter contract id"
+                />
+              </div>
 
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                  <Input
-                    label="Expires At"
-                    type="date"
-                    value={issueExpiresAt}
-                    onChange={(event) => setIssueExpiresAt(event.target.value)}
-                    required
-                  />
-                  <div>
-                    <label className="mb-2 block text-sm font-medium text-gray-700">Metadata JSON</label>
-                    <textarea
-                      rows={3}
-                      className="w-full rounded-lg border border-gray-300 px-4 py-2 text-gray-900 placeholder-gray-500 focus:border-primary-600 focus:outline-none focus:ring-1 focus:ring-primary-600"
-                      value={issueMetadata}
-                      onChange={(event) => setIssueMetadata(event.target.value)}
-                      placeholder='{"licenseType":"standard"}'
-                    />
+              <div className="grid gap-4 lg:grid-cols-2">
+                <SelectField
+                  label="License type"
+                  name="licenseType"
+                  value={licenseType}
+                  onChange={(value) => setLicenseType(value as 'temporary' | 'permanent')}
+                  options={[
+                    { value: 'temporary', label: 'Temporary unlock' },
+                    { value: 'permanent', label: 'Permanent unlock' }
+                  ]}
+                />
+                <FormField
+                  label="Metadata (JSON)"
+                  name="metadata"
+                  type="textarea"
+                  value={metadata}
+                  onChange={setMetadata}
+                  placeholder='{"source":"admin"}'
+                />
+              </div>
+
+              <div className="grid gap-4 lg:grid-cols-2">
+                <FormField
+                  label="Expiration date"
+                  name="expiresAt"
+                  type="date"
+                  value={licenseType === 'temporary' ? expiresAt : ''}
+                  onChange={setExpiresAt}
+                  disabled={licenseType !== 'temporary'}
+                />
+              </div>
+
+              {issueError && <p className="text-sm text-red-500">{issueError}</p>}
+
+              <div className="flex flex-wrap justify-end gap-3">
+                <Button variant="secondary" onClick={() => issueSelectedLicense('temporary')} disabled={issueLoading || !selectedDeviceId || !selectedContractId}>
+                  {issueLoading ? 'Issuing…' : 'Issue temporary license'}
+                </Button>
+                <Button variant="primary" onClick={() => issueSelectedLicense('permanent')} disabled={issueLoading || !selectedDeviceId || !selectedContractId}>
+                  {issueLoading ? 'Issuing…' : 'Issue permanent unlock'}
+                </Button>
+              </div>
+
+              {license ? (
+                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <p className="text-sm text-slate-500">Issued license</p>
+                      <p className="mt-2 text-lg font-semibold text-slate-900">{license.id}</p>
+                    </div>
+                    <StatusBadge status={license.status} />
+                  </div>
+
+                  <div className="mt-4 grid gap-3 sm:grid-cols-3">
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.24em] text-slate-500">Device</p>
+                      <p className="text-sm text-slate-900">{license.device?.serialNumber ?? selectedDeviceId}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.24em] text-slate-500">Type</p>
+                      <p className="text-sm text-slate-900">{license.licenseType ?? 'temporary'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.24em] text-slate-500">Expires</p>
+                      <p className="text-sm text-slate-900">{license.expiresAt ? dateFormatter.format(new Date(license.expiresAt)) : '—'}</p>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 rounded-2xl bg-white p-4 text-sm text-slate-700">
+                    <p className="font-medium text-slate-900">{license.licenseType === 'permanent' ? 'Permanent unlock key' : 'License key'}</p>
+                    <p className="break-all mt-2">{license.licenseKey ?? 'Available after payment confirmation'}</p>
                   </div>
                 </div>
+              ) : null}
+            </Card>
 
-                {issueError && <p className="text-sm text-red-600">{issueError}</p>}
-
-                <Button type="submit" variant="primary" loading={issueLoading}>
-                  Issue License
-                </Button>
-              </form>
-
-              {issuedLicense && (
-                <div className="space-y-3">
-                  <p className="text-sm font-semibold text-gray-900">Latest Issued License</p>
-                  <LicenseSummary license={issuedLicense} />
-                </div>
-              )}
-            </div>
-          </Card>
-
-          <Card>
-            <div className="space-y-4">
+            <Card className="space-y-6 p-6">
               <div>
-                <h2 className="text-xl font-semibold text-gray-900">Verify License</h2>
-                <p className="mt-1 text-sm text-gray-500">Validate a payload and base64 signature against the public license key.</p>
+                <h2 className="text-lg font-semibold text-slate-900">Verification & lookup</h2>
+                <p className="mt-2 text-sm text-slate-600">Lookup active device licenses or verify a license payload signature.</p>
               </div>
 
-              <form className="space-y-4" onSubmit={handleVerifyLicense}>
+              <div className="space-y-4">
+                <SelectField
+                  label="Lookup active license for device"
+                  name="lookupDevice"
+                  value={selectedDeviceId}
+                  onChange={setSelectedDeviceId}
+                  options={[{ value: '', label: 'Select device' }, ...devices.map((device) => ({ value: device.id, label: device.serialNumber || `${device.manufacturer ?? ''} ${device.model ?? ''}`.trim() }))]}
+                />
+                <Button variant="secondary" onClick={handleLookup} disabled={lookupLoading || !selectedDeviceId}>
+                  {lookupLoading ? 'Looking up…' : 'Lookup active license'}
+                </Button>
+
+                {lookupError && <p className="text-sm text-red-500">{lookupError}</p>}
+
+                {deviceLicense ? (
+                  <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                    <p className="text-sm text-slate-500">Active license</p>
+                    <p className="mt-2 text-base font-semibold text-slate-900">{deviceLicense.id}</p>
+                    <div className="mt-2 flex items-center gap-2">
+                      <StatusBadge status={deviceLicense.status} />
+                      <span className="rounded-full bg-slate-200 px-2 py-1 text-xs font-medium uppercase tracking-wide text-slate-700">
+                        {deviceLicense.licenseType ?? 'temporary'}
+                      </span>
+                    </div>
+                    <p className="mt-3 text-sm text-slate-700">
+                      {deviceLicense.expiresAt ? `Expires at ${dateFormatter.format(new Date(deviceLicense.expiresAt))}` : 'Permanent unlock: no expiry'}
+                    </p>
+                  </div>
+                ) : null}
+              </div>
+
+              <div className="mt-6 space-y-4">
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-gray-700">Payload JSON</label>
-                  <textarea
-                    rows={7}
-                    className="w-full rounded-lg border border-gray-300 px-4 py-2 text-gray-900 placeholder-gray-500 focus:border-primary-600 focus:outline-none focus:ring-1 focus:ring-primary-600"
+                  <FormField
+                    label="Payload JSON"
+                    name="verifyPayload"
+                    type="textarea"
                     value={verifyPayload}
-                    onChange={(event) => setVerifyPayload(event.target.value)}
-                    placeholder='{"deviceId":"...","contractId":"...","issuedAt":"...","expiresAt":"...","keyId":"default","algorithm":"RSA-SHA256"}'
-                    required
+                    onChange={setVerifyPayload}
+                    placeholder='{"licenseId":"...","deviceId":"..."}'
                   />
                 </div>
-                <Input
-                  label="Signature"
-                  value={verifySignature}
-                  onChange={(event) => setVerifySignature(event.target.value)}
-                  placeholder="Base64 signature"
-                  required
-                />
-
-                {verifyError && <p className="text-sm text-red-600">{verifyError}</p>}
-
-                <Button type="submit" variant="secondary" loading={verifyLoading}>
-                  Verify License
+                <div>
+                  <FormField
+                    label="Signature"
+                    name="verifySignature"
+                    value={verifySignature}
+                    onChange={setVerifySignature}
+                    placeholder="Paste signature here"
+                  />
+                </div>
+                <Button variant="primary" onClick={handleVerify} disabled={verifyLoading || !verifyPayload || !verifySignature}>
+                  {verifyLoading ? 'Verifying…' : 'Verify license'}
                 </Button>
-              </form>
 
-              {verifyResult && <VerificationSummary result={verifyResult} />}
+                {verifyResult ? (
+                  <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
+                    <p>{verifyResult}</p>
+                  </div>
+                ) : null}
+              </div>
+            </Card>
+          </div>
+
+          <Card className="p-6">
+            <h2 className="text-lg font-semibold text-slate-900">License operations</h2>
+            <p className="mt-2 text-sm text-slate-600">These actions use the backend license engine and device lookup endpoints.</p>
+          </Card>
+
+          <Card className="overflow-hidden">
+            <div className="flex flex-col gap-2 p-5 border-b border-slate-200 bg-slate-50 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm font-semibold text-slate-900">Issued licenses</p>
+                <p className="text-sm text-slate-500">Showing {licenses.length} license{licenses.length === 1 ? '' : 's'}.</p>
+              </div>
+            </div>
+
+            <div className="overflow-x-auto bg-white">
+              <table className="min-w-full divide-y divide-slate-200 bg-white">
+                <thead className="bg-white text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  <tr>
+                    <th className="px-4 py-3">License ID</th>
+                    <th className="px-4 py-3">Device</th>
+                    <th className="px-4 py-3">Contract</th>
+                    <th className="px-4 py-3">Type</th>
+                    <th className="px-4 py-3">Status</th>
+                    <th className="px-4 py-3">Expires</th>
+                  </tr>
+                </thead>
+                {licensesLoading ? (
+                  <TableSkeleton columnCount={6} rowCount={5} />
+                ) : licensesError ? (
+                  <tbody>
+                    <tr>
+                      <td className="px-4 py-10 text-center" colSpan={5}>
+                        <p className="text-sm text-slate-500">{licensesError}</p>
+                      </td>
+                    </tr>
+                  </tbody>
+                ) : licenses.length === 0 ? (
+                  <tbody>
+                    <tr>
+                      <td className="px-4 py-10 text-center" colSpan={5}>
+                        <div className="flex flex-col items-center gap-4">
+                          <img src={noDataImg} alt="No licenses" className="max-w-[280px] opacity-95" />
+                          <p className="text-sm text-slate-500">No licenses have been issued yet.</p>
+                        </div>
+                      </td>
+                    </tr>
+                  </tbody>
+                ) : (
+                  <tbody className="divide-y divide-slate-200 bg-slate-50">
+                    {licenses.map((licenseItem) => (
+                      <tr key={licenseItem.id} className="hover:bg-white transition-colors cursor-default">
+                        <td className="px-4 py-4 font-medium text-slate-900 break-all">{licenseItem.id}</td>
+                        <td className="px-4 py-4 text-sm text-slate-700">{licenseItem.device?.serialNumber ?? licenseItem.deviceId ?? 'Unknown'}</td>
+                        <td className="px-4 py-4 text-sm text-slate-700">{licenseItem.contract?.id ?? licenseItem.contractId ?? 'N/A'}</td>
+                        <td className="px-4 py-4 text-sm text-slate-700 uppercase tracking-wide">{licenseItem.licenseType ?? 'temporary'}</td>
+                        <td className="px-4 py-4"><StatusBadge status={licenseItem.status} /></td>
+                        <td className="px-4 py-4 text-sm text-slate-500">{licenseItem.expiresAt ? dateFormatter.format(new Date(licenseItem.expiresAt)) : 'Permanent'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                )}
+              </table>
             </div>
           </Card>
         </div>
-
-        <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-          <Card>
-            <div className="space-y-4">
-              <div>
-                <h2 className="text-xl font-semibold text-gray-900">Lookup License by ID</h2>
-                <p className="mt-1 text-sm text-gray-500">Find a license record and inspect its signed payload.</p>
-              </div>
-
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-[1fr_auto]">
-                <Input
-                  label="License ID"
-                  value={lookupLicenseId}
-                  onChange={(event) => setLookupLicenseId(event.target.value)}
-                  placeholder="License UUID"
-                />
-                <div className="flex items-end">
-                  <Button
-                    type="button"
-                    variant="primary"
-                    loading={lookupLicenseLoading}
-                    onClick={handleLookupLicense}
-                    disabled={!lookupLicenseId.trim()}
-                  >
-                    Lookup
-                  </Button>
-                </div>
-              </div>
-
-              {lookupLicenseError && <p className="text-sm text-red-600">{lookupLicenseError}</p>}
-              {licenseDetail && <LicenseSummary license={licenseDetail} />}
-            </div>
-          </Card>
-
-          <Card>
-            <div className="space-y-4">
-              <div>
-                <h2 className="text-xl font-semibold text-gray-900">Active License for Device</h2>
-                <p className="mt-1 text-sm text-gray-500">Check the current unlock status for a device.</p>
-              </div>
-
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-[1fr_auto]">
-                <Input
-                  label="Device ID"
-                  value={deviceIdLookup}
-                  onChange={(event) => setDeviceIdLookup(event.target.value)}
-                  placeholder="Device UUID"
-                />
-                <div className="flex items-end">
-                  <Button
-                    type="button"
-                    variant="primary"
-                    loading={deviceLicenseLoading}
-                    onClick={handleLookupDeviceLicense}
-                    disabled={!deviceIdLookup.trim()}
-                  >
-                    Check Device
-                  </Button>
-                </div>
-              </div>
-
-              {deviceLicenseError && <p className="text-sm text-red-600">{deviceLicenseError}</p>}
-              {deviceLicenseResult && <DeviceLicenseSummary result={deviceLicenseResult} />}
-            </div>
-          </Card>
-        </div>
-      </div>
-    </DashboardLayout>
+      </MainLayout>
+    </>
   );
 }

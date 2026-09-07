@@ -8,17 +8,26 @@ export const createContractSchema = z.object({
   customerId: uuidSchema,
   deviceId: uuidSchema.optional(),
   contractNumber: z.string().min(1).max(120),
-  currency: z.string().length(3).default("NGN"),
+  currency: z.string().trim().toUpperCase().length(3).default("NGN"),
   devicePrice: z.coerce.number().positive(),
   deposit: z.coerce.number().nonnegative().default(0),
   installmentAmount: z.coerce.number().positive(),
   firstDueDate: z.coerce.date(),
-  installmentCount: z.coerce.number().int().min(1).max(120),
-  metadata: z.record(z.unknown()).default({})
+  installmentCount: z.coerce.number().int().min(1).max(120),  paymentPlan: z.enum(["weekly", "monthly", "yearly"]).default("monthly"),  metadata: z.record(z.unknown()).default({})
 });
 
 export const updateContractStatusSchema = z.object({
   status: contractStatusSchema,
+  reason: z.string().min(3).max(500).optional()
+});
+
+export const cancelPlanRequestSchema = z.object({
+  contractId: uuidSchema,
+  reason: z.string().max(500).optional()
+});
+
+export const cancelPlanDecisionSchema = z.object({
+  decision: z.enum(["approved", "rejected"]),
   reason: z.string().min(3).max(500).optional()
 });
 
@@ -38,5 +47,7 @@ export const listContractsQuerySchema = z.object({
 
 export type CreateContractInput = z.infer<typeof createContractSchema>;
 export type UpdateContractStatusInput = z.infer<typeof updateContractStatusSchema>;
+export type CancelPlanRequestInput = z.infer<typeof cancelPlanRequestSchema>;
+export type CancelPlanDecisionInput = z.infer<typeof cancelPlanDecisionSchema>;
 export type ListContractsQuery = z.infer<typeof listContractsQuerySchema>;
 

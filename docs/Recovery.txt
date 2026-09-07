@@ -1,0 +1,656 @@
+Project X — Device Recovery & Permanent Release Documentation
+1. Purpose
+
+The Device Recovery system provides dealers with a controlled way to restore access to a locked device without exposing or modifying the device's permanent license key.
+
+The system must support two different situations:
+
+Temporary technical recovery — the dealer needs to restore access because the device was incorrectly locked or has a technical problem.
+Permanent device release/activation — the device is legitimately being removed from normal pay-as-you-go restrictions or permanently activated.
+
+The system must also work with the existing Project X architecture where:
+
+Device registration requires internet connectivity.
+License information is synchronized to the device during registration.
+Normal device operation can subsequently occur offline.
+A locked device may not have internet connectivity.
+Dealer recovery must therefore be possible without requiring the locked device itself to connect to the server.
+2. Core Principles
+
+The recovery system should follow these principles.
+
+2.1 Never expose the permanent license key
+
+The permanent license key should not be displayed to dealers as a recovery mechanism.
+
+The recovery mechanism should use a separate authorization.
+
+2.2 Recovery does not equal ownership
+
+Temporarily recovering a device does not mean the customer has completed payment or obtained permanent ownership.
+
+2.3 Payment status remains truthful
+
+A temporary recovery should never change:
+
+payment status
+outstanding balance
+financing contract status
+customer ownership status
+2.4 The device must be recoverable offline
+
+The locked desktop application cannot depend on an internet connection to validate the recovery authorization.
+
+The authorization therefore needs to be cryptographically verifiable locally.
+
+2.5 Dealer authority is limited to their devices
+
+A dealer should only be able to recover or release devices belonging to that dealer.
+
+2.6 Permanent actions require stronger controls
+
+Permanent release/activation should require explicit confirmation and a complete audit trail.
+
+3. Types of Device Access
+
+Project X should distinguish between four concepts.
+
+3.1 Normal License
+
+This represents the customer's normal entitlement to use the device.
+
+It is associated with the normal financing/payment process.
+
+Once synchronized to the device, it can be validated offline.
+
+3.2 Temporary Dealer Recovery
+
+This is temporary access provided to resolve a technical or operational problem.
+
+Example:
+
+Device incorrectly entered lock mode.
+
+The main Dealer can recover the device for 36 hours after the authorization is accepted.
+
+Each device may successfully use temporary recovery no more than twice. A third valid attempt must be rejected with "Limit hit".
+
+Temporary recovery does not permanently modify the customer's license.
+
+3.3 Permanent Device Release
+
+This permanently removes the device from its current locking/recovery restrictions.
+
+It can be used for legitimate business cases such as:
+
+Device returned by customer.
+Device transferred.
+Device sold outright.
+Contract terminated.
+Device permanently released.
+Other approved business exception.
+
+This is different from temporary recovery.
+
+3.4 Super Admin Override
+
+This is the highest-level administrative mechanism.
+
+It exists for exceptional situations where the normal dealer process is insufficient.
+
+A Super Admin can perform actions that ordinary dealer accounts cannot, subject to the business rules established by Project X.
+
+4. Device Registration
+
+Before recovery can work, the device must first be properly registered.
+
+During registration:
+
+The device connects to the internet.
+The server identifies the device.
+The server verifies the dealer.
+The server associates the device with the appropriate customer/account.
+The server determines the device's licensing state.
+The required license information is generated or assigned.
+The necessary licensing information is securely stored on the device.
+The device synchronizes its licensing state with the server.
+The device can subsequently validate its license offline.
+
+The device should also store the information necessary to recognize its identity and verify signed recovery authorizations.
+
+5. Device Enters Lock Mode
+
+When Project X determines that the device should be locked:
+
+The desktop application enters Lock Mode.
+Normal access to the operating environment/application is restricted according to the product design.
+The device displays the recovery option.
+The device displays a device identifier.
+If using challenge-response recovery, the device also generates/displays a recovery challenge.
+The device does not need internet access merely to display the recovery interface.
+
+The lock screen should provide:
+
+Dealer Recovery
+
+rather than exposing the permanent license key.
+
+6. Dealer Recovery Process
+Step 1 — Dealer identifies the device
+
+The dealer obtains the device ID from the locked device.
+
+Example:
+
+Device ID: PX-48291
+
+If a challenge-response system is used, the device also displays a temporary challenge.
+
+Step 2 — Dealer logs into the Dealer Dashboard
+
+The dealer signs into the Project X dashboard.
+
+The dashboard identifies the dealer and determines which devices belong to that dealer.
+
+The dealer should only be able to access devices assigned to their dealership.
+
+Step 3 — Dealer selects the device
+
+The dealer searches for or selects the affected device.
+
+The dashboard should display relevant information such as:
+
+Device ID
+Customer
+Device status
+Financing status
+License status
+Current lock state
+Previous recovery activity
+
+Sensitive license secrets should not be displayed.
+
+7. Dealer Starts Recovery
+
+The dealer selects:
+
+Recover Device
+
+The system performs authorization checks.
+
+It should verify:
+
+The dealer is authenticated.
+The dealer has recovery permission.
+The device exists.
+The device belongs to the dealer.
+The device is eligible for recovery.
+The device is not permanently released already.
+The request complies with recovery rules.
+
+If these checks pass, the system generates a temporary recovery authorization.
+
+8. Temporary Recovery Authorization
+
+The authorization should contain enough information for the desktop application to verify it.
+
+Conceptually, it could contain:
+
+Device ID
+Dealer ID
+Authorization type
+Issue time
+Expiration time
+Unique authorization ID
+Optional recovery reason
+Cryptographic signature
+
+The authorization should be signed by the Project X licensing system.
+
+The desktop application contains the appropriate public verification key.
+
+The private signing key remains securely on the server.
+
+9. Dealer Provides Authorization to Device
+
+The dealer enters the recovery authorization into the locked device.
+
+The device performs local verification.
+
+It checks:
+
+Signature validity
+Device identity
+Dealer identity
+Authorization type
+Expiration
+Authorization state
+Other applicable restrictions
+
+The device should never simply trust a code because it has the correct format.
+
+10. Successful Temporary Recovery
+
+If verification succeeds:
+
+The device accepts the authorization.
+The device records the recovery event locally.
+The device enters Temporary Recovery Mode.
+Normal device functionality becomes available.
+The recovery expiration time is stored locally.
+The device remains subject to its original financing/payment state.
+
+The user should see something similar to:
+
+Temporary Recovery Active
+
+Access expires: [date/time]
+
+11. What Temporary Recovery Does NOT Do
+
+Temporary recovery must not:
+
+mark the customer as paid
+cancel the customer's financing plan
+create permanent ownership
+replace the permanent license
+delete the customer's account
+change the dealer assignment
+permanently disable the locking system
+expose the permanent license key
+
+This separation is extremely important.
+
+12. Recovery Expiration
+
+When the temporary recovery period expires:
+
+The temporary authorization becomes invalid.
+The desktop application stops treating the device as temporarily recovered.
+The normal license rules become authoritative again.
+If the device is legitimately active, it continues working.
+If the device should still be locked, it returns to Lock Mode.
+
+The expiration should be enforced locally so that the device does not need internet access to determine that the recovery period has ended.
+
+13. What Happens If the User Wants to Cancel?
+
+Temporary recovery should not automatically cancel the customer's financing plan.
+
+While the device is temporarily recovered, the customer can access the appropriate financing/account functionality.
+
+If they request cancellation:
+
+The cancellation request is created.
+The request is stored locally if necessary.
+When internet connectivity becomes available, it is synchronized with the backend.
+The backend checks the customer's actual account.
+The backend checks payment and contract conditions.
+The cancellation request is approved or rejected according to the business rules.
+The resulting device/license state is synchronized back to the device.
+
+The device itself should not independently declare the financing contract cancelled.
+
+14. Permanent Device Release
+
+Temporary recovery is not the only operation available to the dealer.
+
+A dealer may also have permission to permanently release a device.
+
+This should be treated as a separate operation.
+
+The dealer selects:
+
+Permanently Release Device
+
+The system should first verify that:
+
+The dealer owns/manages the device.
+The dealer has the required permission.
+The device is eligible for permanent release.
+The device isn't already permanently released.
+The requested reason is valid.
+15. Permanent Release Reasons
+
+The system should require a reason.
+
+Possible reasons include:
+
+Customer completed purchase.
+Device returned.
+Device transferred.
+Device sold outright.
+Financing agreement terminated.
+Device permanently released.
+Technical/business exception.
+Other.
+
+If Other is selected, the dealer should provide an explanation.
+
+16. Permanent Release Confirmation
+
+Before executing the operation, the dealer should see a clear warning.
+
+For example:
+
+Permanent Device Release
+
+This action will permanently change this device's licensing state.
+
+This action does not automatically change the customer's payment status.
+
+This action will be recorded in the audit log.
+
+Continue?
+
+The dealer must explicitly confirm.
+
+17. Permanent Release and Payment Status
+
+Payment status and device licensing should remain separate.
+
+For example, the system may legitimately contain:
+
+Payment Status: Partially Paid
+Device Status: Permanently Released
+
+This can happen if a device is returned or transferred under a business process.
+
+Therefore, permanent release should not automatically mean "customer has paid everything."
+
+If the customer has completed payment, that is a separate financial event.
+
+18. Permanent Activation
+
+For cases where the customer has actually completed the financing requirements, the system can perform a normal permanent activation.
+
+The process is:
+
+Payment is confirmed.
+Backend updates the customer's financial status.
+Backend determines that permanent ownership/access is now valid.
+Permanent license status is activated.
+Device synchronizes when it next connects to the internet.
+Permanent licensing information is stored securely on the device.
+The device can continue validating its permanent license offline.
+
+This is different from a dealer releasing a device because it was returned or transferred.
+
+19. Super Admin Override
+
+The Super Admin should have a higher-level administrative mechanism for exceptional cases.
+
+The Super Admin can potentially:
+
+Recover a device.
+Permanently release a device.
+Override certain restrictions.
+Resolve unusual licensing situations.
+
+However, these actions should be explicitly controlled.
+
+A Super Admin permanent override should require:
+
+Super Admin authentication.
+Device selection.
+Reason.
+Confirmation.
+Audit logging.
+
+The Super Admin should not need to manually manipulate the database or expose/copy license keys.
+
+20. Revoking a Permanent Override
+
+A permanent override should not have a simple "undo" mechanism that silently rewrites history.
+
+Instead, if the business needs to reverse it, the system should create a new administrative event:
+
+Revoke Permanent Authorization
+
+The audit history would therefore preserve both actions.
+
+For example:
+
+Permanent Release — ACTIVE
+Reason: Device permanently released
+
+Permanent Release — REVOKED
+Reason: Release created in error
+
+This preserves accountability.
+
+21. Offline Security Model
+
+The offline aspect is critical.
+
+The desktop application should not trust a plain text recovery password.
+
+Instead, Project X should use cryptographically signed recovery authorizations.
+
+The general concept is:
+
+Project X server owns a private signing key.
+The desktop application contains the corresponding public verification key.
+Server creates a recovery authorization.
+Server signs the authorization.
+Dealer enters the authorization on the locked device.
+Desktop application verifies the signature locally.
+Desktop application verifies that the authorization applies to that device.
+Desktop application checks expiration.
+Device grants the appropriate access.
+
+The private signing key should never be stored on the device.
+
+22. Dealer Security
+
+Dealer accounts should have explicit permissions.
+
+For example:
+
+Main Dealer
+
+View devices
+Start recovery
+Perform temporary recovery
+Permanently release devices
+
+Super Admin
+
+Platform-wide administrative authority
+Exceptional overrides
+
+This gives you much better control than giving every dealer employee the same level of authority.
+
+23. Recovery Audit Log
+
+Every recovery event should be recorded.
+
+A recovery record should contain information such as:
+
+Recovery ID
+Device ID
+Dealer ID
+Customer/account ID
+Dealer user who initiated it
+Recovery type
+Reason
+Issue time
+Expiration time
+Result
+Device confirmation, where available
+
+The audit log should answer:
+
+Who recovered this device?
+
+Which device was recovered?
+
+Why was it recovered?
+
+When was it recovered?
+
+How long was the recovery valid?
+
+Was it actually accepted by the device?
+
+24. Important Difference: Issued vs Used
+
+The system should distinguish between:
+
+Recovery Authorization Issued
+
+and
+
+Recovery Authorization Successfully Used
+
+For example:
+
+Authorization generated at 10:00.
+
+does not necessarily mean:
+
+Device successfully recovered at 10:05.
+
+This is especially important because the device can be offline.
+
+When the device eventually connects to the internet, it can synchronize its recovery event with the server.
+
+25. Recovery History
+
+The dealer dashboard should show recovery history for each device.
+
+For example:
+
+Device PX-48291
+
+Aug 20 — Temporary Recovery — 36 hours
+Aug 23 — Temporary Recovery — 36 hours
+Aug 24 — Permanent Release
+
+This allows dealers and administrators to identify repeated problems.
+
+Repeated recovery events could also become a signal that the device or licensing system needs investigation.
+
+26. Recommended Device States
+
+The exact implementation can vary, but conceptually the system should distinguish:
+
+Registered
+Active
+Locked
+Temporary Recovery
+Permanently Released
+Permanently Licensed
+Revoked
+
+These states should not be collapsed into one generic ACTIVE/INACTIVE field.
+
+27. Recommended Business Rules
+
+The following rules should be enforced:
+
+Rule 1
+
+A dealer can only recover devices belonging to that dealer.
+
+Rule 2
+
+Temporary recovery has an expiration.
+
+Rule 3
+
+Temporary recovery does not change payment status.
+
+Rule 4
+
+Temporary recovery does not create permanent ownership.
+
+Rule 5
+
+The permanent license key is never used as the recovery mechanism.
+
+Rule 6
+
+Permanent release requires explicit permission.
+
+Rule 7
+
+Permanent release requires a reason.
+
+Rule 8
+
+Permanent release is audited.
+
+Rule 9
+
+Payment status is controlled by the financing/payment system.
+
+Rule 10
+
+The locked device must be able to validate recovery authorization offline.
+
+Rule 11
+
+The server remains authoritative for financial and account information.
+
+Rule 12
+
+The desktop application remains capable of enforcing signed licensing/recovery information offline.
+
+28. Recommended End-to-End User Experience
+
+For the dealer, the complete experience should be simple:
+
+Customer's device becomes locked.
+Dealer opens the locked device.
+Dealer selects Dealer Recovery.
+Device displays its Device ID/recovery information.
+Dealer logs into Project X.
+Dealer finds the device.
+Dealer verifies that the device belongs to their dealership.
+Dealer selects Recover Device.
+Project X generates a temporary signed recovery authorization.
+Dealer enters the authorization on the device.
+Device verifies it locally.
+Device becomes temporarily usable.
+Dealer/customer resolves the problem.
+Recovery eventually expires.
+Device returns to its normal licensing state.
+
+If the device legitimately needs permanent release:
+
+Dealer selects Permanently Release Device.
+Project X checks dealer permissions and device ownership.
+Dealer selects the reason.
+Dealer confirms the permanent action.
+Project X creates a permanent authorization.
+The event is recorded in the audit log.
+The device receives/synchronizes the permanent state when possible.
+The device can subsequently operate offline according to the new licensing state.
+29. Final Architecture
+
+The key concept for Project X should be:
+
+Recovery is not a license.
+
+The system has separate mechanisms for separate purposes:
+
+Normal License
+Controls legitimate long-term access.
+
+Dealer Temporary Recovery
+Solves technical/lock problems for a limited period.
+
+Dealer Permanent Release
+Permanently removes the device from its current restrictions when the dealer is authorized to do so.
+
+Permanent Activation
+Represents legitimate permanent access, normally resulting from the financing/payment process.
+
+Super Admin Override
+Handles exceptional cases that require higher administrative authority.
+
+Payment Status
+Remains a completely separate source of truth.
+
+This architecture lets the dealer handle most device problems themselves, including recovery of a device that is completely offline, while preventing a temporary technical-support mechanism from accidentally becoming a permanent licensing loophole.

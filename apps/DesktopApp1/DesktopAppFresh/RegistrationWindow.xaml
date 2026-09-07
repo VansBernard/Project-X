@@ -1,0 +1,359 @@
+<Window x:Class="DesktopAppFresh.RegistrationWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        Title="Project X - Device Registration"
+        Width="1200"
+        Height="700"
+        MinWidth="1100"
+        MinHeight="660"
+        Background="#F5F7FB"
+        WindowStartupLocation="CenterScreen">
+    <Window.Resources>
+        <SolidColorBrush x:Key="NavyBrush" Color="#0B1C30"/>
+        <SolidColorBrush x:Key="BlueBrush" Color="#246BFE"/>
+        <SolidColorBrush x:Key="BluePaleBrush" Color="#E8EFFF"/>
+        <SolidColorBrush x:Key="InkBrush" Color="#102136"/>
+        <SolidColorBrush x:Key="MutedBrush" Color="#718096"/>
+        <SolidColorBrush x:Key="LineBrush" Color="#E4EAF2"/>
+        <SolidColorBrush x:Key="SurfaceBrush" Color="#FFFFFF"/>
+        <SolidColorBrush x:Key="CanvasBrush" Color="#F5F7FB"/>
+
+
+        <Style x:Key="RegistrationInput" TargetType="TextBox">
+            <Setter Property="Height" Value="40"/>
+            <Setter Property="Padding" Value="10,0,10,0"/>
+            <Setter Property="Background" Value="#F5F7FB"/>
+            <Setter Property="BorderBrush" Value="{StaticResource LineBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Foreground" Value="{StaticResource InkBrush}"/>
+            <Setter Property="FontFamily" Value="{StaticResource BodyFont}"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TextBox">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="6"
+                                SnapsToDevicePixels="True">
+                            <ScrollViewer x:Name="PART_ContentHost" Margin="0" />
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="RegistrationCombo" TargetType="ComboBox">
+            <Setter Property="Height" Value="40"/>
+            <Setter Property="Background" Value="#F5F7FB"/>
+            <Setter Property="BorderBrush" Value="{StaticResource LineBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Foreground" Value="{StaticResource InkBrush}"/>
+            <Setter Property="FontFamily" Value="{StaticResource BodyFont}"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
+
+        <Style x:Key="RegistrationSubmit" TargetType="Button">
+            <Setter Property="MinWidth" Value="150"/>
+            <Setter Property="Height" Value="40"/>
+            <Setter Property="Padding" Value="18,0,18,0"/>
+            <Setter Property="Background" Value="{StaticResource BlueBrush}"/>
+            <Setter Property="Foreground" Value="#FFFFFF"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="FontFamily" Value="{StaticResource BodyFont}"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontWeight" Value="700"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                SnapsToDevicePixels="True">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
+    <Grid Background="{StaticResource CanvasBrush}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="60"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <Border Grid.Row="0" Background="{StaticResource SurfaceBrush}" BorderBrush="{StaticResource LineBrush}" BorderThickness="0,0,0,1">
+            <Grid Margin="32,0,32,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <Image Source="/Project X.png" Width="30" Height="30" Stretch="Uniform" Margin="0,0,10,0"/>
+                    <TextBlock Text="PROJECT X"
+                               FontFamily="{StaticResource DisplayFont}"
+                               FontSize="18"
+                               FontWeight="700"
+                               Foreground="{StaticResource InkBrush}"
+                               VerticalAlignment="Center"/>
+                </StackPanel>
+
+                <TextBlock Grid.Column="1"
+                           Text="Back to sign in"
+                           FontFamily="{StaticResource BodyFont}"
+                           FontSize="12"
+                           FontWeight="700"
+                           Foreground="{StaticResource BlueBrush}"
+                           VerticalAlignment="Center"/>
+            </Grid>
+        </Border>
+
+        <Grid Grid.Row="1" Margin="0,14,0,16">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <Grid Width="1120" Margin="0,0,0,10">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <TextBlock Text="DEVICE REGISTRATION"
+                           FontFamily="{StaticResource BodyFont}"
+                           FontSize="11"
+                           FontWeight="700"
+                           Foreground="{StaticResource BlueBrush}"
+                           Margin="0,0,0,8"
+                           TextTrimming="CharacterEllipsis"/>
+
+                <TextBlock Grid.Row="1"
+                           Text="Register a Project X device"
+                           FontFamily="{StaticResource DisplayFont}"
+                           FontSize="25"
+                           FontWeight="600"
+                           Foreground="{StaticResource InkBrush}"
+                           Margin="0,0,0,6"/>
+
+                <TextBlock Grid.Row="1"
+                           Margin="0,38,0,0"
+                           Text="Enter the customer, device, and payment details below to complete registration."
+                           FontFamily="{StaticResource BodyFont}"
+                           FontSize="13"
+                           Foreground="{StaticResource MutedBrush}"/>
+            </Grid>
+
+            <Grid Grid.Row="1" Width="1120" Margin="0,0,0,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="1.15*"/>
+                    <ColumnDefinition Width="0.85*"/>
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <Border Grid.Column="0" Background="{StaticResource SurfaceBrush}" Padding="18" BorderBrush="{StaticResource LineBrush}" BorderThickness="1" CornerRadius="8">
+                    <StackPanel>
+                        <TextBlock Text="Customer information"
+                                   FontFamily="{StaticResource DisplayFont}"
+                                   FontSize="16"
+                                   FontWeight="600"
+                                   Foreground="{StaticResource InkBrush}"
+                                   Margin="0,0,0,6"/>
+
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <StackPanel Grid.Column="0" Margin="0,0,12,8">
+                                <TextBlock Text="First name" FontFamily="{StaticResource BodyFont}" FontSize="11" FontWeight="700" Foreground="{StaticResource InkBrush}" Margin="0,0,0,4"/>
+                                <TextBox x:Name="CustomerFirstNameTextBox" Style="{StaticResource RegistrationInput}" Text=""/>
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="1" Margin="0,0,0,8">
+                                <TextBlock Text="Last name" FontFamily="{StaticResource BodyFont}" FontSize="11" FontWeight="700" Foreground="{StaticResource InkBrush}" Margin="0,0,0,4"/>
+                                <TextBox x:Name="CustomerLastNameTextBox" Style="{StaticResource RegistrationInput}" Text=""/>
+                            </StackPanel>
+                        </Grid>
+
+                        <Grid Margin="0,2,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0" Margin="0,0,12,8">
+                                <TextBlock Text="Email address" FontFamily="{StaticResource BodyFont}" FontSize="11" FontWeight="700" Foreground="{StaticResource InkBrush}" Margin="0,0,0,4"/>
+                                <TextBox x:Name="CustomerEmailTextBox" Style="{StaticResource RegistrationInput}" Text=""/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="1" Margin="0,0,0,8">
+                                <TextBlock Text="Phone number" FontFamily="{StaticResource BodyFont}" FontSize="11" FontWeight="700" Foreground="{StaticResource InkBrush}" Margin="0,0,0,4"/>
+                                <TextBox x:Name="CustomerPhoneTextBox" Style="{StaticResource RegistrationInput}" Text=""/>
+                            </StackPanel>
+                        </Grid>
+
+                        <Grid Margin="0,0,0,6">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="1.3*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0" Margin="0,0,12,0">
+                                <TextBlock Text="Street address" FontFamily="{StaticResource BodyFont}" FontSize="11" FontWeight="700" Foreground="{StaticResource InkBrush}" Margin="0,0,0,4"/>
+                                <TextBox x:Name="CustomerAddressTextBox" Style="{StaticResource RegistrationInput}" Text=""/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="1">
+                                <TextBlock Text="City" FontFamily="{StaticResource BodyFont}" FontSize="11" FontWeight="700" Foreground="{StaticResource InkBrush}" Margin="0,0,0,4"/>
+                                <TextBox x:Name="CustomerCityTextBox" Style="{StaticResource RegistrationInput}" Text=""/>
+                            </StackPanel>
+                        </Grid>
+
+                        <StackPanel Margin="0,2,0,0">
+                            <TextBlock Text="Country" FontFamily="{StaticResource BodyFont}" FontSize="11" FontWeight="700" Foreground="{StaticResource InkBrush}" Margin="0,0,0,4"/>
+                            <ComboBox x:Name="CountryComboBox" Style="{StaticResource RegistrationCombo}" IsEditable="True"/>
+                        </StackPanel>
+
+                        <StackPanel Margin="0,12,0,0">
+                            <TextBlock Text="Device information" FontFamily="{StaticResource DisplayFont}" FontSize="16" FontWeight="600" Foreground="{StaticResource InkBrush}" Margin="0,0,0,6"/>
+
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Grid.Column="0" Margin="0,0,12,8">
+                                    <TextBlock Text="Manufacturer" FontFamily="{StaticResource BodyFont}" FontSize="11" FontWeight="700" Foreground="{StaticResource InkBrush}" Margin="0,0,0,4"/>
+                                    <TextBox x:Name="ManufacturerTextBox" Style="{StaticResource RegistrationInput}" Text=""/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="1" Margin="0,0,0,8">
+                                    <TextBlock Text="Device name" FontFamily="{StaticResource BodyFont}" FontSize="11" FontWeight="700" Foreground="{StaticResource InkBrush}" Margin="0,0,0,4"/>
+                                    <TextBox x:Name="ModelTextBox" Style="{StaticResource RegistrationInput}" Text=""/>
+                                </StackPanel>
+                            </Grid>
+
+                            <StackPanel>
+                                <TextBlock Text="Device ID" FontFamily="{StaticResource BodyFont}" FontSize="11" FontWeight="700" Foreground="{StaticResource InkBrush}" Margin="0,0,0,4"/>
+                                <TextBox x:Name="DeviceSerialTextBox" Style="{StaticResource RegistrationInput}" Text="" IsReadOnly="True"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <Border Grid.Column="1" Background="{StaticResource BluePaleBrush}" Padding="18" BorderBrush="{StaticResource LineBrush}" BorderThickness="1" CornerRadius="8">
+                    <StackPanel>
+                        <TextBlock Text="Installment plan"
+                                   FontFamily="{StaticResource DisplayFont}"
+                                   FontSize="16"
+                                   FontWeight="600"
+                                   Foreground="{StaticResource InkBrush}"
+                                   Margin="0,0,0,5"/>
+
+                        <TextBlock Text="Set the price, payment schedule, and first due date."
+                                   FontFamily="{StaticResource BodyFont}"
+                                   FontSize="11"
+                                   Foreground="{StaticResource MutedBrush}"
+                                   Margin="0,0,0,8"
+                                   TextWrapping="Wrap"/>
+
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0" Margin="0,0,10,8">
+                                <TextBlock Text="Device amount" FontFamily="{StaticResource BodyFont}" FontSize="11" FontWeight="700" Foreground="{StaticResource InkBrush}" Margin="0,0,0,4"/>
+                                <TextBox x:Name="DevicePriceTextBox" Style="{StaticResource RegistrationInput}" TextChanged="InstallmentInput_TextChanged"/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="1" Width="78" Margin="0,0,0,8">
+                                <TextBlock Text="Currency" FontFamily="{StaticResource BodyFont}" FontSize="11" FontWeight="700" Foreground="{StaticResource InkBrush}" Margin="0,0,0,4"/>
+                                <ComboBox x:Name="CurrencyComboBox" Style="{StaticResource RegistrationCombo}" IsEditable="True" SelectionChanged="CurrencyComboBox_SelectionChanged"/>
+                            </StackPanel>
+                        </Grid>
+
+                        <StackPanel Margin="0,0,0,8">
+                            <TextBlock Text="Amount deposited" FontFamily="{StaticResource BodyFont}" FontSize="11" FontWeight="700" Foreground="{StaticResource InkBrush}" Margin="0,0,0,4"/>
+                            <TextBox x:Name="DepositTextBox" Style="{StaticResource RegistrationInput}" TextChanged="InstallmentInput_TextChanged"/>
+                        </StackPanel>
+
+                        <TextBlock Text="Payment frequency" FontFamily="{StaticResource BodyFont}" FontSize="11" FontWeight="700" Foreground="{StaticResource InkBrush}" Margin="0,0,0,4"/>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                            <RadioButton x:Name="WeeklyRadioButton" Content="Weekly" IsChecked="True" GroupName="Frequency" FontFamily="{StaticResource BodyFont}" Margin="0,0,14,0" Checked="InstallmentFrequency_Checked"/>
+                            <RadioButton x:Name="MonthlyRadioButton" Content="Monthly" GroupName="Frequency" FontFamily="{StaticResource BodyFont}" Margin="0,0,14,0" Checked="InstallmentFrequency_Checked"/>
+                            <RadioButton x:Name="YearlyRadioButton" Content="Yearly" GroupName="Frequency" FontFamily="{StaticResource BodyFont}" Checked="InstallmentFrequency_Checked"/>
+                        </StackPanel>
+
+                        <Grid Margin="0,0,0,8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0" Margin="0,0,10,0">
+                                <TextBlock Text="Number of payments" FontFamily="{StaticResource BodyFont}" FontSize="11" FontWeight="700" Foreground="{StaticResource InkBrush}" Margin="0,0,0,4"/>
+                                <TextBox x:Name="InstallmentCountTextBox" Style="{StaticResource RegistrationInput}" Text="12" IsReadOnly="True"/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="1">
+                                <TextBlock Text="Installment amount" FontFamily="{StaticResource BodyFont}" FontSize="11" FontWeight="700" Foreground="{StaticResource InkBrush}" Margin="0,0,0,4"/>
+                                <TextBox x:Name="InstallmentAmountTextBox" Style="{StaticResource RegistrationInput}" Text="" IsReadOnly="True"/>
+                            </StackPanel>
+                        </Grid>
+
+                        <StackPanel Margin="0,0,0,6">
+                            <TextBlock Text="First due date" FontFamily="{StaticResource BodyFont}" FontSize="11" FontWeight="700" Foreground="{StaticResource InkBrush}" Margin="0,0,0,4"/>
+                            <DatePicker x:Name="FirstDueDatePicker" Height="36" Background="#F5F7FB" BorderBrush="{StaticResource LineBrush}" BorderThickness="1"/>
+                        </StackPanel>
+
+                        <Border BorderBrush="#C4D5F5" BorderThickness="0,1,0,0" Margin="0,2,0,0" Padding="0,7,0,0">
+                            <StackPanel>
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="Balance to finance" FontFamily="{StaticResource BodyFont}" FontSize="11" Foreground="{StaticResource MutedBrush}"/>
+                                    <TextBlock x:Name="BalanceToFinanceTextBlock" Text="Select currency" FontFamily="{StaticResource BodyFont}" FontSize="12" FontWeight="700" Foreground="{StaticResource InkBrush}" Margin="10,0,0,0"/>
+                                </StackPanel>
+                                <TextBlock Text="Estimated payment" FontFamily="{StaticResource BodyFont}" FontSize="10" FontWeight="700" Foreground="{StaticResource BlueBrush}" Margin="0,12,0,4"/>
+                                    <TextBlock x:Name="EstimatedPaymentTextBlock" Text="Select currency" FontFamily="{StaticResource DisplayFont}" FontSize="24" FontWeight="700" Foreground="{StaticResource NavyBrush}"/>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </Border>
+            </Grid>
+
+            <StackPanel Grid.Row="2" Margin="0,10,0,0" HorizontalAlignment="Right" Width="1120">
+                <Grid>
+                    <Button x:Name="RegisterBtn" Style="{StaticResource RegistrationSubmit}" Click="RegisterBtn_Click" HorizontalAlignment="Right">
+                        <TextBlock x:Name="RegisterBtnText" Text="REGISTER DEVICE" TextAlignment="Center" />
+                    </Button>
+                    <Border x:Name="RegisterProgressBar" Width="0" Height="3" HorizontalAlignment="Left" VerticalAlignment="Bottom" Background="#FFFFFF" Opacity="0.2" Visibility="Visible"/>
+                </Grid>
+                <TextBlock x:Name="RegisterInfoText"
+                           Margin="0,10,0,0"
+                           FontFamily="{StaticResource BodyFont}"
+                           FontSize="12"
+                           Foreground="{StaticResource MutedBrush}"/>
+                <TextBlock x:Name="SecurityPostureText"
+                           Margin="0,8,0,0"
+                           FontFamily="{StaticResource BodyFont}"
+                           FontSize="11"
+                           Foreground="{StaticResource MutedBrush}"
+                           TextWrapping="Wrap"/>
+            </StackPanel>
+        </Grid>
+
+        <StackPanel Visibility="Collapsed">
+            <TextBox x:Name="DealerIdTextBox"/>
+            <TextBox x:Name="CustomerStateTextBox"/>
+            <TextBox x:Name="HardwareFingerprintTextBox"/>
+            <TextBox x:Name="DeviceMacAddressTextBox"/>
+            <TextBox x:Name="ContractNumberTextBox"/>
+        </StackPanel>
+    </Grid>
+</Window>

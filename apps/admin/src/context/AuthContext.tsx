@@ -15,7 +15,7 @@ export interface AuthContextType {
   loading: boolean;
   error: string | null;
   isAuthenticated: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string, dealerSlug: string) => Promise<void>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
   clearError: () => void;
@@ -57,11 +57,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  const login = useCallback(async (email: string, password: string) => {
+  const login = useCallback(async (email: string, password: string, dealerSlug: string) => {
     setLoading(true);
     setError(null);
     try {
-      await apiClient.login(email, password);
+      await apiClient.login(email, password, dealerSlug);
       await refreshUserData();
     } catch (err) {
       const apiError = err as ApiError;

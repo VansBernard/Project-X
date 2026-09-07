@@ -11,7 +11,7 @@ interface FormFieldProps {
   type?: string;
   placeholder?: string;
   value: string | number;
-  onChange: (value: string | number) => void;
+  onChange: (value: string) => void;
   error?: string;
   required?: boolean;
   disabled?: boolean;
@@ -45,7 +45,7 @@ export function FormField({
           onChange={(e) => onChange(e.target.value)}
           disabled={disabled}
           rows={rows || 4}
-          className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-4 py-2 border border-slate-100 dark:border-gray-600 rounded-none bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
       ) : type === 'select' ? (
         <select
@@ -54,7 +54,7 @@ export function FormField({
           value={value}
           onChange={(e) => onChange(e.target.value)}
           disabled={disabled}
-          className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-4 py-2 border border-slate-100 dark:border-gray-600 rounded-none bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
           <option value="">Select an option</option>
         </select>

@@ -22,6 +22,7 @@ export const Permissions = {
   CustomersManage: "customers:manage",
   CustomersHistoryRead: "customers:history:read",
   DevicesRegister: "devices:register",
+  DevicesRecover: "devices:recover",
   ContractsCreate: "contracts:create",
   ContractsRead: "contracts:read",
   ContractsManage: "contracts:manage",

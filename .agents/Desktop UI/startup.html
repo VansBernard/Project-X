@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Project X - Welcome</title>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+    :root {
+        --navy: #061538;
+        --navy-soft: #0b204b;
+        --blue: #1765ed;
+        --ink: #0b1c30;
+        --muted: #dce7ff;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+        margin: 0;
+        width: 100vw;
+        height: 100vh;
+        overflow: hidden;
+        background: #eef0f2;
+        color: var(--ink);
+        font-family: "Hanken Grotesk", sans-serif;
+    }
+
+    .startup-window {
+        position: relative;
+        width: 100vw;
+        height: 100vh;
+        overflow: hidden;
+        border: 0;
+        border-radius: 0;
+        background: #fff;
+    }
+
+    .welcome-panel {
+        position: absolute;
+        inset: 0 auto 0 0;
+        z-index: 2;
+        width: 65%;
+        padding: 6.5% 0 6% 6.6%;
+        color: #fff;
+        background: linear-gradient(145deg, #07183d 0%, var(--navy) 76%, #071a40 100%);
+        clip-path: polygon(0 0, 100% 0, 88% 100%, 0 100%);
+    }
+
+    .welcome-panel::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        opacity: .18;
+        pointer-events: none;
+        background-image: radial-gradient(#7187bd 1px, transparent 1px);
+        background-size: 20px 20px;
+        mask-image: linear-gradient(120deg, rgba(0,0,0,.6), transparent 42%);
+    }
+
+    .brand, .welcome-copy, .feature-list { position: relative; z-index: 1; }
+
+    .brand {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: clamp(18px, 1.85vw, 25px);
+        font-weight: 700;
+    }
+
+    .brand-mark {
+        position: relative;
+        width: 22px;
+        height: 22px;
+        color: #fff;
+        font-size: 28px;
+        line-height: 20px;
+        font-weight: 700;
+        transform: skew(-8deg);
+    }
+
+    .brand-logo {
+        width: 36px;
+        height: 36px;
+        object-fit: contain;
+        border-radius: 5px;
+        background: #fff;
+    }
+
+    .welcome-copy { margin-top: 9%; max-width: 300px; }
+    h1 { margin: 0; font-size: clamp(35px, 4.1vw, 56px); line-height: .98; letter-spacing: -.02em; }
+    .tagline { margin: 17px 0 0; font-size: clamp(16px, 1.55vw, 22px); font-weight: 600; }
+    .description { margin: 15px 0 0; max-width: 310px; color: var(--muted); font-size: clamp(13px, 1.08vw, 17px); line-height: 1.4; }
+    .details { margin: 13px 0 0; max-width: 320px; color: #b9cbed; font-size: clamp(13px, 1vw, 16px); line-height: 1.4; }
+
+    .feature-list {
+        margin-top: 20px;
+        display: grid;
+        gap: 13px;
+        margin: 8% 0 0;
+        padding: 0;
+        list-style: none;
+        font-size: clamp(13px, 1.08vw, 17px);
+    }
+
+    .feature-list li { display: flex; align-items: center; gap: 9px; }
+    .feature-icon {
+        display: grid;
+        place-items: center;
+        width: 21px;
+        height: 21px;
+        border: 1px solid rgba(255,255,255,.8);
+        border-radius: 50%;
+        color: #fff;
+        font-size: 12px;
+    }
+
+    .product-panel { position: absolute; inset: 0 0 0 43%; background: #fff; }
+
+    .device-image {
+        position: absolute;
+        z-index: 3;
+        top: 17%;
+        left: 10%;
+        width: 80%;
+        max-width: 720px;
+        height: auto;
+        object-fit: contain;
+        filter: drop-shadow(0 10px 8px rgba(0, 0, 0, .2));
+    }
+
+    .get-started {
+        position: absolute;
+        right: 8%;
+        bottom: 6%;
+        z-index: 3;
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        min-width: 130px;
+        justify-content: center;
+        padding: 12px 16px;
+        border: 0;
+        border-radius: 5px;
+        background: var(--blue);
+        color: #fff;
+        font: 700 clamp(12px, 1.08vw, 15px) "Hanken Grotesk", sans-serif;
+        text-decoration: none;
+        cursor: pointer;
+        box-shadow: 0 3px 7px rgba(23, 101, 237, .25);
+        transition: background .2s ease, transform .2s ease;
+    }
+
+    .get-started:hover { background: #0750cc; transform: translateY(-1px); }
+    .get-started:focus-visible { outline: 3px solid #8bb5ff; outline-offset: 3px; }
+
+    @media (max-width: 540px) {
+        .welcome-panel { padding-left: 6%; }
+        .welcome-copy { margin-top: 8%; }
+        .feature-list { gap: 8px; margin-top: 7%; }
+        .get-started { min-width: 100px; padding: 9px 10px; gap: 5px; }
+    }
+</style>
+</head>
+<body>
+<main class="startup-window" aria-label="Project X welcome screen">
+    <section class="welcome-panel" aria-labelledby="welcome-title">
+        <div class="brand"><img class="brand-logo" src="Project X.png" alt="Project X logo"><span>Project X</span></div>
+        <div class="welcome-copy">
+            <h1 id="welcome-title">Welcome to<br>Project X</h1>
+            <p class="tagline">Secure. Activate. Work.</p>
+            <p class="description">This app connects your device to your financing account and manages your license securely.</p>
+            <p class="details">Create your account, activate your device, and track your installment plan from one secure workspace.</p>
+        </div>
+        <ul class="feature-list" aria-label="Project X features">
+            <li><span class="feature-icon">✓</span><span>Verify your account</span></li>
+            <li><span class="feature-icon">A</span><span>Activate your license</span></li>
+        </ul>
+    </section>
+    <section class="product-panel" aria-label="Device preview">
+        <img class="device-image" src="510uTHyDqGL._AC_UF1000,1000_QL80_.png" alt="Laptop device preview">
+        <a class="get-started" href="index.html">Get Started <span aria-hidden="true">&#8594;</span></a>
+    </section>
+</main>
+</body>
+</html>

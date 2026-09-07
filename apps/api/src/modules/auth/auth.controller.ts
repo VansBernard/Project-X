@@ -6,6 +6,7 @@ import type {
   LogoutInput,
   RefreshInput,
   ResetPasswordInput,
+  ResendVerificationInput,
   VerifyEmailInput
 } from "./auth.schemas.js";
 
@@ -52,6 +53,11 @@ export const authController = {
   async verifyEmail(req: Request<object, object, VerifyEmailInput>, res: Response) {
     await authService.verifyEmail(req.body);
     return res.status(204).send();
+  },
+
+  async resendVerification(req: Request<object, object, ResendVerificationInput>, res: Response) {
+    const result = await authService.resendEmailVerification(req.body);
+    return res.status(202).json({ data: result });
   },
 
   async me(req: Request, res: Response) {

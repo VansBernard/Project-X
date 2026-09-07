@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+	<OutputType>WinExe</OutputType>
+	<TargetFramework>net8.0-windows</TargetFramework>
+	<UseWPF>true</UseWPF>
+	<Nullable>enable</Nullable>
+  <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+  </PropertyGroup>
+  <PropertyGroup>
+	<!-- Enable Per-Monitor V2 DPI awareness -->
+	<ApplicationManifest>app.manifest</ApplicationManifest>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="QRCoder" Version="1.6.0" />
+    <PackageReference Include="System.Management" Version="8.0.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="*.cs" Exclude="RecoveryPolicyTests.cs" />
+    <Resource Include="Project X.png" />
+    <Resource Include="510uTHyDqGL._AC_UF1000,1000_QL80_.png" />
+    <Resource Include="photo-1782729433827-b5d43a30973f.avif" />
+    <Resource Include="photo-1782729433827-b5d43a30973f.png" />
+    <Resource Include="Fonts\SpaceGrotesk.ttf" />
+    <Resource Include="Fonts\DMSans.ttf" />
+  </ItemGroup>
+</Project>

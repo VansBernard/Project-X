@@ -142,11 +142,26 @@ export const customerManagementService = {
             }
           : {})
       },
+      include: {
+        _count: {
+          select: {
+            contracts: {
+              where: { deletedAt: null }
+            }
+          }
+        }
+      },
       orderBy: { createdAt: "desc" },
       ...pagination(query)
     });
 
-    return pageResult(customers, query.take);
+    return pageResult(
+      customers.map(({ _count, ...customer }) => ({
+        ...customer,
+        contractCount: _count.contracts
+      })),
+      query.take
+    );
   },
 
   async contractHistory(dealerId: string, customerId: string) {

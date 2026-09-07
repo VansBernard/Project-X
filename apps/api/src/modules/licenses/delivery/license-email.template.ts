@@ -4,6 +4,8 @@ type LicenseEmailInput = {
   paymentInformation: string;
   expirationDate: string;
   licenseKey: string;
+  licenseType: "temporary" | "permanent";
+  deliveryMessage?: string;
 };
 
 function escapeHtml(value: string) {
@@ -16,14 +18,19 @@ function escapeHtml(value: string) {
 }
 
 export function licenseEmailSubject(input: LicenseEmailInput) {
-  return `Project X license for ${input.deviceInformation}`;
+  const licenseKind = input.licenseType === "permanent" ? "Permanent unlock license" : "Temporary recovery license";
+  return `${licenseKind} for ${input.deviceInformation}`;
 }
 
 export function licenseEmailText(input: LicenseEmailInput) {
+  const licenseMessage = input.deliveryMessage ?? (input.licenseType === "permanent"
+    ? "Your permanent unlock license has been generated because your contract has been fully settled."
+    : "Your temporary recovery license has been generated after a successful payment.");
+
   return [
     `Hello ${input.customerName},`,
     "",
-    "Your Project X laptop license has been generated after a successful payment.",
+    licenseMessage,
     "",
     `Customer Name: ${input.customerName}`,
     `Device Information: ${input.deviceInformation}`,
@@ -50,7 +57,7 @@ export function licenseEmailHtml(input: LicenseEmailInput) {
   <body style="font-family: Arial, sans-serif; color: #111827; line-height: 1.5;">
     <h1 style="font-size: 20px;">Project X License</h1>
     <p>Hello ${safe.customerName},</p>
-    <p>Your Project X laptop license has been generated after a successful payment.</p>
+    <p>${escapeHtml(input.deliveryMessage ?? (input.licenseType === "permanent" ? "Your permanent unlock license has been generated because your contract has been fully settled." : "Your temporary recovery license has been generated after a successful payment."))}</p>
     <table cellpadding="8" cellspacing="0" style="border-collapse: collapse;">
       <tr><td><strong>Customer Name</strong></td><td>${safe.customerName}</td></tr>
       <tr><td><strong>Device Information</strong></td><td>${safe.deviceInformation}</td></tr>
@@ -62,4 +69,3 @@ export function licenseEmailHtml(input: LicenseEmailInput) {
   </body>
 </html>`;
 }
-

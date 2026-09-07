@@ -5,7 +5,18 @@ import { canonicalJson } from "./canonical-json.js";
 import type { LicensePayload } from "./license.schemas.js";
 
 function privateKeyPem() {
-  return Buffer.from(env.LICENSE_PRIVATE_KEY_PEM_BASE64, "base64").toString("utf8");
+  const raw = env.LICENSE_PRIVATE_KEY_PEM_BASE64.trim();
+
+  if (raw.includes("-----BEGIN")) {
+    return raw.replace(/\r/g, "");
+  }
+
+  const decoded = Buffer.from(raw, "base64").toString("utf8");
+  if (decoded.includes("-----BEGIN")) {
+    return decoded.replace(/\r/g, "");
+  }
+
+  return raw;
 }
 
 function privateKey() {

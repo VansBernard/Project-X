@@ -1,199 +1,124 @@
-/**
- * Dealers Management Page
- */
-import { useEffect, useState } from 'react';
-import { PageHeader } from '../components/PageHeader';
+import { useEffect, useMemo, useState } from 'react';
 import { Card } from '../components/Card';
-import { Button } from '../components/Button';
-import { DataTable, Column } from '../components/DataTable';
-import { Modal } from '../components/Modal';
-import { Form, FormField, SelectField } from '../components/Form';
-import { useDealers } from '../lib/hooks';
-import { useApp } from '../context/AppContext';
-import * as Types from '../types';
+import { Sidebar, Header, MainLayout } from '../components/Layout';
 import { StatusBadge } from '../components/StatusBadge';
+import { TableSkeleton } from '../components/TableSkeleton';
+import { apiClient, type DealerListItem } from '../lib/api';
+import noTenantsImg from '../../No tenants.jpg';
+
+const dateFormatter = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+function formatCurrency(value: number) {
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(value);
+}
 
 export default function DealersPage() {
-  const { dealers, loading, error, fetch, create, update, delete: deleteDealer } = useDealers();
-  const { addNotification } = useApp();
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingDealer, setEditingDealer] = useState<Types.Dealer | null>(null);
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    status: 'active' as const,
-    tier: 'bronze' as const,
-  });
+  const [dealers, setDealers] = useState<DealerListItem[]>([]);
+  const [page, setPage] = useState(1);
+  const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState(false);
+  const itemsPerPage = 10;
+  const totalDealers = dealers.length;
+  const pageCount = Math.max(1, Math.ceil(totalDealers / itemsPerPage));
 
   useEffect(() => {
-    fetch();
-  }, [fetch]);
+    let cancelled = false;
+    setLoading(true);
+    setLoadError(false);
 
-  const handleOpenModal = (dealer?: Types.Dealer) => {
-    if (dealer) {
-      setEditingDealer(dealer);
-      setFormData({
-        name: dealer.name,
-        email: dealer.email,
-        phone: dealer.phone,
-        status: dealer.status,
-        tier: dealer.tier,
+    apiClient.listDealers({ take: 100 })
+      .then((response) => {
+        if (!cancelled) {
+          setDealers(response.data);
+          setLoading(false);
+          setLoadError(false);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setLoading(false);
+          setLoadError(true);
+        }
       });
-    } else {
-      setEditingDealer(null);
-      setFormData({
-        name: '',
-        email: '',
-        phone: '',
-        status: 'active',
-        tier: 'bronze',
-      });
-    }
-    setIsModalOpen(true);
-  };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      if (editingDealer) {
-        await update(editingDealer.id, formData);
-        addNotification('success', 'Dealer updated successfully');
-      } else {
-        await create(formData as any);
-        addNotification('success', 'Dealer created successfully');
-      }
-      setIsModalOpen(false);
-    } catch {
-      addNotification('error', 'Failed to save dealer');
-    }
-  };
+    return () => { cancelled = true; };
+  }, []);
 
-  const handleDelete = async (id: string) => {
-    if (confirm('Are you sure?')) {
-      try {
-        await deleteDealer(id);
-        addNotification('success', 'Dealer deleted successfully');
-      } catch {
-        addNotification('error', 'Failed to delete dealer');
-      }
-    }
-  };
-
-  const columns: Column<Types.Dealer>[] = [
-    { key: 'name', label: 'Name', sortable: true },
-    { key: 'email', label: 'Email' },
-    { key: 'phone', label: 'Phone' },
-    {
-      key: 'tier',
-      label: 'Tier',
-      render: (value) => (
-        <span className="px-2 py-1 rounded text-sm font-medium bg-blue-100 text-blue-800">
-          {String(value).charAt(0).toUpperCase() + String(value).slice(1)}
-        </span>
-      ),
-    },
-    {
-      key: 'status',
-      label: 'Status',
-      render: (value) => <StatusBadge status={String(value) as any} />,
-    },
-    {
-      key: 'totalRevenue',
-      label: 'Revenue',
-      render: (value) => `$${Number(value).toLocaleString()}`,
-    },
-  ];
+  const currentDealers = useMemo(
+    () => dealers.slice((page - 1) * itemsPerPage, page * itemsPerPage),
+    [dealers, page]
+  );
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title="Dealers"
-        subtitle={`Managing ${dealers.length} dealers`}
-        action={
-          <Button onClick={() => handleOpenModal()}>
-            + Add Dealer
-          </Button>
-        }
-      />
+    <>
+      <Sidebar />
+      <Header title="Dealers" subtitle="Review dealer accounts and earnings." />
+      <MainLayout>
+        <div className="space-y-6">
+          <section className="space-y-6">
+            <Card className="overflow-hidden">
+              <div className="flex flex-col gap-2 p-5 border-b border-slate-200 bg-slate-50 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-sm font-semibold text-slate-900">Dealer list</p>
+                <p className="text-sm font-medium text-slate-700">{totalDealers} dealers</p>
+              </div>
 
-      <Card>
-        <DataTable
-          columns={columns}
-          data={dealers}
-          loading={loading}
-          error={error}
-          onRowClick={(dealer) => handleOpenModal(dealer)}
-          actions={(dealer) => (
-            <div className="flex gap-2">
-              <Button size="sm" variant="secondary" onClick={() => handleOpenModal(dealer)}>
-                Edit
-              </Button>
-              <Button size="sm" variant="danger" onClick={() => handleDelete(dealer.id)}>
-                Delete
-              </Button>
-            </div>
-          )}
-        />
-      </Card>
+              <div className="overflow-x-auto bg-white">
+                <table className="min-w-full divide-y divide-slate-200 bg-white">
+                  <thead className="bg-white text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    <tr>
+                      <th className="px-4 py-3">Dealer</th>
+                      <th className="px-4 py-3">Phone</th>
+                      <th className="px-4 py-3">Devices</th>
+                      <th className="px-4 py-3">Revenue</th>
+                      <th className="px-4 py-3">Joined</th>
+                      <th className="px-4 py-3">Status</th>
+                    </tr>
+                  </thead>
+                  {loading ? (
+                    <TableSkeleton columnCount={6} rowCount={5} />
+                  ) : currentDealers.length === 0 ? (
+                    <tbody className="text-sm leading-snug bg-white">
+                      <tr>
+                        <td className="px-4 py-10 text-center" colSpan={6}>
+                          <div className="flex flex-col items-center gap-4">
+                            <img src={noTenantsImg} alt="No dealers" className="max-w-[280px] opacity-95" />
+                            <p className="text-sm text-slate-500">{loadError ? 'Could not load dealers. Please refresh and try again.' : 'No dealers yet. Add one to start.'}</p>
+                          </div>
+                        </td>
+                      </tr>
+                    </tbody>
+                  ) : (
+                    <tbody className="divide-y divide-slate-200 bg-slate-50">
+                      {currentDealers.map((dealer) => (
+                        <tr key={dealer.id} className="hover:bg-white transition-colors">
+                          <td className="px-4 py-4">
+                            <div className="font-medium text-slate-900">{dealer.name}</div>
+                            <div className="text-sm text-slate-500">{dealer.email || 'No email'}</div>
+                          </td>
+                          <td className="px-4 py-4 text-sm text-slate-700">{dealer.phone || '—'}</td>
+                          <td className="px-4 py-4 text-sm text-slate-700">{dealer.deviceCount ?? 0}</td>
+                          <td className="px-4 py-4 text-sm font-semibold text-slate-900">{formatCurrency(dealer.totalRevenue ?? 0)}</td>
+                          <td className="px-4 py-4 text-sm text-slate-500">{dateFormatter.format(new Date(dealer.createdAt))}</td>
+                          <td className="px-4 py-4"><StatusBadge status={dealer.status} /></td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  )}
+                </table>
+              </div>
 
-      <Modal
-        isOpen={isModalOpen}
-        title={editingDealer ? 'Edit Dealer' : 'Add New Dealer'}
-        onClose={() => setIsModalOpen(false)}
-        size="lg"
-      >
-        <Form onSubmit={handleSubmit} onCancel={() => setIsModalOpen(false)}>
-          <FormField
-            label="Name"
-            name="name"
-            placeholder="Enter dealer name"
-            value={formData.name}
-            onChange={(value) => setFormData({ ...formData, name: String(value) })}
-            required
-          />
-          <FormField
-            label="Email"
-            name="email"
-            type="email"
-            placeholder="Enter email"
-            value={formData.email}
-            onChange={(value) => setFormData({ ...formData, email: String(value) })}
-            required
-          />
-          <FormField
-            label="Phone"
-            name="phone"
-            type="tel"
-            placeholder="Enter phone number"
-            value={formData.phone}
-            onChange={(value) => setFormData({ ...formData, phone: String(value) })}
-          />
-          <SelectField
-            label="Tier"
-            name="tier"
-            value={formData.tier}
-            onChange={(value) => setFormData({ ...formData, tier: value as any })}
-            options={[
-              { value: 'bronze', label: 'Bronze' },
-              { value: 'silver', label: 'Silver' },
-              { value: 'gold', label: 'Gold' },
-              { value: 'platinum', label: 'Platinum' },
-            ]}
-          />
-          <SelectField
-            label="Status"
-            name="status"
-            value={formData.status}
-            onChange={(value) => setFormData({ ...formData, status: value as any })}
-            options={[
-              { value: 'active', label: 'Active' },
-              { value: 'inactive', label: 'Inactive' },
-              { value: 'suspended', label: 'Suspended' },
-            ]}
-          />
-        </Form>
-      </Modal>
-    </div>
+              <div className="flex items-center justify-between border-t border-slate-200 bg-slate-50 px-5 py-4 text-sm text-slate-600">
+                <div>Showing {currentDealers.length} of {totalDealers} dealers</div>
+                <div className="flex items-center gap-2">
+                  <button type="button" onClick={() => setPage((prev) => Math.max(prev - 1, 1))} disabled={page === 1} className="rounded-lg border border-slate-300 bg-white px-3 py-1 text-slate-700 disabled:cursor-not-allowed disabled:opacity-40">Previous</button>
+                  <span className="px-2">Page {page} of {pageCount}</span>
+                  <button type="button" onClick={() => setPage((prev) => Math.min(prev + 1, pageCount))} disabled={page === pageCount} className="rounded-lg border border-slate-300 bg-white px-3 py-1 text-slate-700 disabled:cursor-not-allowed disabled:opacity-40">Next</button>
+                </div>
+              </div>
+            </Card>
+          </section>
+        </div>
+      </MainLayout>
+    </>
   );
 }

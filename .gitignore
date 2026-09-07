@@ -77,3 +77,17 @@ obj/
 dist/
 build/
 .env.production.local
+
+# Local investigation and database repair artifacts
+buildlog.txt
+api.log
+api-start.log
+api-runtime.log
+admin-auth.log
+X.zip
+apps/api/status.txt
+apps/api/sessions.txt
+apps/api/tmp/
+apps/api/tmp_*
+apps/api/debug-*.js
+apps/api/debug-*.ts

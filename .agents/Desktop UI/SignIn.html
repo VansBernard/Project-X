@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Project X - Login</title>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "secondary-fixed": "#d6e3ff",
+                    "secondary-container": "#d2e0fe",
+                    "on-secondary-fixed-variant": "#39475f",
+                    "secondary": "#515f78",
+                    "error-container": "#ffdad6",
+                    "primary-fixed-dim": "#b7c4ff",
+                    "inverse-surface": "#213145",
+                    "on-error-container": "#93000a",
+                    "tertiary-container": "#5e667a",
+                    "background": "#f8f9ff",
+                    "on-primary-fixed-variant": "#0038b6",
+                    "on-surface": "#0b1c30",
+                    "on-tertiary-fixed": "#141b2c",
+                    "on-error": "#ffffff",
+                    "on-primary": "#ffffff",
+                    "on-primary-fixed": "#001452",
+                    "tertiary-fixed": "#dbe2fa",
+                    "on-secondary-container": "#55637d",
+                    "surface": "#f8f9ff",
+                    "on-primary-container": "#dfe3ff",
+                    "tertiary-fixed-dim": "#bfc6dd",
+                    "on-tertiary-fixed-variant": "#3f4759",
+                    "on-background": "#0b1c30",
+                    "on-secondary": "#ffffff",
+                    "surface-container-low": "#eff4ff",
+                    "inverse-primary": "#b7c4ff",
+                    "outline-variant": "#c3c5d9",
+                    "surface-dim": "#cbdbf5",
+                    "surface-tint": "#004ced",
+                    "on-tertiary": "#ffffff",
+                    "inverse-on-surface": "#eaf1ff",
+                    "on-tertiary-container": "#dde4fc",
+                    "error": "#ba1a1a",
+                    "outline": "#737688",
+                    "primary": "#003ec7",
+                    "on-surface-variant": "#434656",
+                    "surface-bright": "#f8f9ff",
+                    "secondary-fixed-dim": "#b9c7e4",
+                    "tertiary": "#474e61",
+                    "surface-variant": "#d3e4fe",
+                    "surface-container": "#e5eeff",
+                    "surface-container-high": "#dce9ff",
+                    "primary-container": "#0052ff",
+                    "surface-container-highest": "#d3e4fe",
+                    "on-secondary-fixed": "#0d1c32",
+                    "surface-container-lowest": "#ffffff",
+                    "primary-fixed": "#dde1ff"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "xs": "8px",
+                    "container-max": "1200px",
+                    "md": "24px",
+                    "base": "4px",
+                    "xl": "48px",
+                    "lg": "32px",
+                    "gutter": "20px",
+                    "sm": "16px"
+            },
+            "fontFamily": {
+                    "body-md": ["Hanken Grotesk"],
+                    "label-md": ["Hanken Grotesk"],
+                    "display": ["Hanken Grotesk"],
+                    "body-lg": ["Hanken Grotesk"],
+                    "headline-lg": ["Hanken Grotesk"],
+                    "headline-md": ["Hanken Grotesk"],
+                    "headline-lg-mobile": ["Hanken Grotesk"]
+            },
+            "fontSize": {
+                    "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "label-md": ["12px", {"lineHeight": "16px", "letterSpacing": "0.01em", "fontWeight": "500"}],
+                    "display": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "headline-lg": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "headline-md": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "headline-lg-mobile": ["22px", {"lineHeight": "28px", "fontWeight": "600"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+                :root {
+                        background: #eef0f2;
+                }
+
+                body {
+                        margin: 0;
+                        min-height: 100vh;
+                        background: #eef0f2;
+                        font-family: "Hanken Grotesk", sans-serif;
+                }
+
+                .login-shell {
+                        display: grid;
+                        grid-template-columns: 50% 50%;
+                        width: 100%;
+                        min-height: 100vh;
+                }
+
+                .login-branding {
+                        position: relative;
+                        display: flex;
+                        min-height: 100vh;
+                        align-items: center;
+                        justify-content: center;
+                        overflow: hidden;
+                        padding: 48px;
+                        color: #fff;
+                        text-align: center;
+                        background: linear-gradient(145deg, #07183d, #061538);
+                }
+
+                .login-branding::before {
+                        content: "";
+                        position: absolute;
+                        inset: 0;
+                        background: url("photo-1782729433827-b5d43a30973f.avif") center / cover no-repeat;
+                        opacity: .55;
+                }
+
+                .login-branding::after {
+                        content: "";
+                        position: absolute;
+                        inset: 0;
+                        background: linear-gradient(145deg, rgba(7, 24, 61, .42), rgba(6, 21, 56, .88));
+                }
+
+                .branding-content { position: relative; z-index: 1; max-width: 420px; }
+                .branding-icon {
+                        display: inline-flex;
+                        align-items: center;
+                        justify-content: center;
+                        width: 72px;
+                        height: 72px;
+                        margin-bottom: 24px;
+                        border-radius: 16px;
+                        color: #fff;
+                        background: #fff;
+                }
+                .branding-logo { width: 56px; height: 56px; object-fit: contain; border-radius: 10px; }
+                .branding-content h1 { margin: 0; font-size: 42px; line-height: 1.1; }
+                .branding-content p { margin: 12px 0 0; color: #dce7ff; font-size: 18px; }
+                .branding-rule { width: 64px; height: 1px; margin: 32px auto; background: rgba(220, 231, 255, .4); }
+                .branding-label { text-transform: uppercase; letter-spacing: .14em; font-size: 12px !important; }
+
+                .login-form-panel {
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        padding: 48px;
+                        background: #fff;
+                }
+
+                @media (max-width: 800px) {
+                        .login-shell { grid-template-columns: 1fr; }
+                        .login-branding { display: none; }
+                        .login-form-panel { min-height: 100vh; padding: 32px 24px; }
+                }
+        </style>
+</head>
+<body class="bg-surface text-on-surface min-h-screen flex antialiased">
+<main class="login-shell">
+<section class="login-branding" aria-label="Project X device management">
+<div class="branding-content">
+<div class="branding-icon"><img class="branding-logo" src="Project X.png" alt="Project X logo"></div>
+<h1>Project X</h1>
+<p>Device Management &amp; Licensing</p>
+<div class="branding-rule"></div>
+<p class="branding-label">Secure. Activate. Work.</p>
+</div>
+</section>
+<section class="login-form-panel">
+<section class="w-full max-w-md">
+<div class="text-center mb-10">
+<h1 class="font-display text-3xl font-bold text-on-surface mb-2">Lets Get Started</h1>
+<p class="font-body-md text-on-surface-variant">Enter your credentials to proceed</p>
+</div>
+<form class="space-y-4" action="#" method="POST">
+<div class="relative">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant">store</span>
+<input class="w-full pl-12 pr-4 py-3 rounded-lg border border-outline-variant bg-surface-container-lowest text-on-surface placeholder:text-outline focus:border-primary focus:ring-1 focus:ring-primary outline-none" name="dealerName" placeholder="Dealers name" required type="text">
+</div>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant">person</span>
+<input class="w-full pl-12 pr-4 py-3 rounded-lg border border-outline-variant bg-surface-container-lowest text-on-surface placeholder:text-outline focus:border-primary focus:ring-1 focus:ring-primary outline-none" name="email" placeholder="Email or Phone Number" required type="text">
+</div>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant">lock</span>
+<input id="password" class="w-full pl-12 pr-12 py-3 rounded-lg border border-outline-variant bg-surface-container-lowest text-on-surface placeholder:text-outline focus:border-primary focus:ring-1 focus:ring-primary outline-none" name="password" placeholder="Password" required type="password">
+<button id="togglePassword" class="absolute right-4 top-1/2 -translate-y-1/2 text-on-surface-variant" type="button" aria-label="Show password"><span class="material-symbols-outlined">visibility</span></button>
+</div>
+<div class="flex items-center justify-between text-sm">
+<a class="text-primary hover:underline" href="#">Forgot password?</a>
+</div>
+<button class="w-full py-3 rounded-lg bg-primary-container text-on-primary-container font-semibold hover:bg-primary transition-colors"  href="Registration.html"type="submit">Sign In</button>
+</form>
+<p class="mt-8 text-center text-sm text-on-surface-variant">Don't have an account? <a class="text-primary font-semibold hover:underline" href="Registration.html">Create one</a></p>
+</section>
+</section>
+</main>
+<footer class="fixed bottom-0 left-0 w-full flex justify-between items-center px-8 py-3 bg-white border-t border-outline-variant text-sm text-on-surface-variant">
+<span>v1.0.0</span><span><span class="material-symbols-outlined align-middle text-green-600 text-base">lock</span> Secure Connection</span>
+</footer>
+<script>
+const password = document.getElementById('password');
+const togglePassword = document.getElementById('togglePassword');
+togglePassword.addEventListener('click', () => {
+        const isPassword = password.type === 'password';
+        password.type = isPassword ? 'text' : 'password';
+        togglePassword.setAttribute('aria-label', isPassword ? 'Hide password' : 'Show password');
+});
+</script>
+</body></html>

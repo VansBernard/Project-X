@@ -1,0 +1,49 @@
+<Application x:Class="DesktopAppFresh.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Application.Resources>
+        <FontFamily x:Key="DisplayFont">/Fonts/#Space Grotesk</FontFamily>
+        <FontFamily x:Key="BodyFont">/Fonts/#DM Sans</FontFamily>
+        <FontFamily x:Key="AppFontFamily">/Fonts/#DM Sans</FontFamily>
+        <SolidColorBrush x:Key="AppButtonBackgroundBrush" Color="#FFFFFFFF" />
+        <SolidColorBrush x:Key="AppButtonBorderBrush" Color="#D1D3D6" />
+        <SolidColorBrush x:Key="AppButtonForegroundBrush" Color="#303032" />
+
+        <Style TargetType="TextBlock">
+            <Setter Property="FontFamily" Value="{StaticResource BodyFont}" />
+        </Style>
+
+        <Style TargetType="TextBox">
+            <Setter Property="FontFamily" Value="{StaticResource BodyFont}" />
+        </Style>
+
+        <Style TargetType="ComboBox">
+            <Setter Property="FontFamily" Value="{StaticResource BodyFont}" />
+        </Style>
+
+        <Style TargetType="Button">
+            <Setter Property="Background" Value="{StaticResource AppButtonBackgroundBrush}" />
+            <Setter Property="Foreground" Value="{StaticResource AppButtonForegroundBrush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource AppButtonBorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="FontFamily" Value="{StaticResource AppFontFamily}" />
+            <Setter Property="FontWeight" Value="Bold" />
+            <Setter Property="Padding" Value="10,8" />
+            <Setter Property="MinHeight" Value="40" />
+            <Setter Property="SnapsToDevicePixels" Value="True" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="10"
+                                SnapsToDevicePixels="True">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" RecognizesAccessKey="True"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Application.Resources>
+</Application>

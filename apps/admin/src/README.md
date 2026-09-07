@@ -44,16 +44,16 @@ apps/admin/src/
 │   ├── api.ts                # API client (existing)
 │   └── hooks.ts              # Custom React hooks for data
 ├── pages/                    # Page components
-│   ├── AdminDashboardPage.tsx    # Main dashboard with KPIs
+│   ├── DashboardPage.tsx         # Main dashboard page
 │   ├── DealersPage.tsx          # Dealer management
-│   ├── CustomersPage.tsx        # Customer management
 │   ├── DevicesPage.tsx          # Device management
-│   ├── ContractsPage.tsx        # Contract management
 │   ├── PaymentsPage.tsx         # Payment management
-│   ├── LicensesPage.tsx         # License management
-│   ├── ReportsPage.tsx          # Report generation
 │   ├── SettingsPage.tsx         # Admin settings
-│   └── [Auth pages]             # Existing auth pages
+│   ├── LoginPage.tsx            # Auth page
+│   ├── ForgotPasswordPage.tsx   # Auth page
+│   ├── ResetPasswordPage.tsx    # Auth page
+│   ├── SignupPage.tsx           # Auth page
+│   └── [Additional pages planned] # Customers, Licenses, Reports, Audit Logs
 ├── routes/                   # Router configuration
 │   ├── index.tsx             # Route configuration
 │   └── ProtectedRoute.tsx    # Route protection wrapper
@@ -227,13 +227,11 @@ Each hook returns:
 
 ## Modules
 
-### Dashboard (`pages/AdminDashboardPage.tsx`)
+### Dashboard (`pages/DashboardPage.tsx`)
 Main administrative dashboard with:
-- **5 Key Performance Indicators**: Revenue, Outstanding Balance, Active Devices, Active Contracts, Licenses Issued
-- **Revenue Trend Chart**: 30-day revenue visualization
-- **Quick Stats**: Revenue target progress, collection rate
-- **Status Summary**: Active dealers, pending payments, expired licenses
-- **Recent Transactions**: Latest 5 transactions with status
+- **Summary Metrics**: Total Devices, Active Devices, Locked Devices, Total Tenants
+- **Recent Devices**: Latest registered devices and status
+- **Payment Overview**: Total collection, pending approvals, performance indicators
 
 ### Dealers (`pages/DealersPage.tsx`)
 Dealer management with:

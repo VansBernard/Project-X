@@ -1,15 +1,17 @@
-import { AuthTokenType, DealerStatus, UserStatus } from "@prisma/client";
+import { AuthTokenType, DealerStatus, Prisma, UserStatus } from "@prisma/client";
 import { env } from "../../config/env.js";
 import { AppError } from "../../middleware/error.middleware.js";
 import { generateOpaqueToken, hashPassword, hashToken, verifyPassword } from "../../lib/crypto.js";
 import { signAccessToken, signRefreshToken, verifyRefreshToken } from "../../lib/jwt.js";
 import { prisma } from "../../lib/prisma.js";
+import { emailService } from "../licenses/delivery/email.service.js";
 import type {
   ForgotPasswordInput,
   LoginInput,
   LogoutInput,
   RefreshInput,
   ResetPasswordInput,
+  ResendVerificationInput,
   VerifyEmailInput
 } from "./auth.schemas.js";
 
@@ -18,7 +20,7 @@ type RequestMetadata = {
   userAgent?: string;
 };
 
-type UserWithRole = Awaited<ReturnType<typeof findUserForAuth>>;
+export type UserWithRole = Awaited<ReturnType<typeof findUserForAuth>>;
 
 function addMinutes(date: Date, minutes: number): Date {
   return new Date(date.getTime() + minutes * 60 * 1000);
@@ -26,6 +28,26 @@ function addMinutes(date: Date, minutes: number): Date {
 
 function addDays(date: Date, days: number): Date {
   return new Date(date.getTime() + days * 24 * 60 * 60 * 1000);
+}
+
+function isDatabaseUnavailableError(error: unknown): boolean {
+  if (typeof error !== "object" || error === null) {
+    return false;
+  }
+
+  const maybeCode = (error as { code?: unknown }).code;
+  const maybeName = (error as { name?: unknown }).name;
+  const maybeMessage = String((error as { message?: string }).message ?? error);
+  const message = maybeMessage.toLowerCase();
+  const normalizedCode = typeof maybeCode === "string" ? maybeCode.toUpperCase() : maybeCode;
+
+  return (
+    normalizedCode === "P1000" ||
+    normalizedCode === "P1001" ||
+    normalizedCode === "P1017" ||
+    maybeName === "PrismaClientInitializationError" ||
+    /can't reach database server|econnrefused|enotfound|eai_again|connect econnrefused|timeout|connection terminated|database is temporarily unavailable|prisma/i.test(message)
+  );
 }
 
 async function findUserForAuth(dealerSlug: string, email: string) {
@@ -40,6 +62,7 @@ async function findUserForAuth(dealerSlug: string, email: string) {
       }
     },
     include: {
+      dealer: true,
       role: {
         include: {
           permissions: {
@@ -59,9 +82,15 @@ function permissionsFor(user: NonNullable<UserWithRole>): string[] {
     .filter(Boolean) ?? [];
 }
 
-async function issueTokenPair(user: NonNullable<UserWithRole>, metadata: RequestMetadata) {
+type AuthDatabase = Pick<typeof prisma, "session"> | Prisma.TransactionClient;
+
+async function issueTokenPair(
+  user: NonNullable<UserWithRole>,
+  metadata: RequestMetadata,
+  database: AuthDatabase = prisma
+) {
   const refreshToken = generateOpaqueToken(48);
-  const session = await prisma.session.create({
+  const session = await database.session.create({
     data: {
       dealerId: user.dealerId,
       userId: user.id,
@@ -87,7 +116,7 @@ async function issueTokenPair(user: NonNullable<UserWithRole>, metadata: Request
     sessionId: session.id
   });
 
-  await prisma.session.update({
+  await database.session.update({
     where: { id: session.id },
     data: { refreshTokenHash: hashToken(signedRefreshToken) }
   });
@@ -100,31 +129,59 @@ async function issueTokenPair(user: NonNullable<UserWithRole>, metadata: Request
   };
 }
 
+/**
+ * Issue tokens for a user (used during signup confirmation)
+ * @param user The user to issue tokens for (must have role loaded)
+ * @param metadata Request metadata (IP, userAgent)
+ * @returns Access token, refresh token, and expiration info
+ */
+export async function issueTokensForUser(user: NonNullable<UserWithRole>, metadata: RequestMetadata = {}) {
+  return issueTokenPair(user, metadata);
+}
+
 export const authService = {
   async login(input: LoginInput, metadata: RequestMetadata) {
-    const user = await findUserForAuth(input.dealerSlug, input.email);
-    if (!user || user.status === UserStatus.disabled || user.deletedAt) {
-      throw new AppError(401, "INVALID_CREDENTIALS", "Invalid email or password.");
-    }
-
-    const passwordMatches = await verifyPassword(input.password, user.passwordHash);
-    if (!passwordMatches) {
-      throw new AppError(401, "INVALID_CREDENTIALS", "Invalid email or password.");
-    }
-
-    if (user.status === UserStatus.suspended) {
-      throw new AppError(403, "USER_SUSPENDED", "This account is suspended.");
-    }
-
-    await prisma.user.update({
-      where: { id: user.id },
-      data: {
-        lastLoginAt: new Date(),
-        status: user.status === UserStatus.invited ? UserStatus.active : user.status
+    try {
+      const user = await findUserForAuth(input.dealerSlug, input.email);
+      if (!user || user.status === UserStatus.disabled || user.deletedAt) {
+        throw new AppError(401, "INVALID_CREDENTIALS", "Invalid email or password.");
       }
-    });
 
-    return issueTokenPair(user, metadata);
+      const passwordMatches = await verifyPassword(input.password, user.passwordHash);
+      if (!passwordMatches) {
+        throw new AppError(401, "INVALID_CREDENTIALS", "Invalid email or password.");
+      }
+
+      if (user.status === UserStatus.suspended) {
+        throw new AppError(403, "USER_SUSPENDED", "This account is suspended.");
+      }
+
+      if (!user.emailVerifiedAt) {
+        throw new AppError(403, "EMAIL_NOT_VERIFIED", "Confirm your email address before signing in.");
+      }
+
+      await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          lastLoginAt: new Date(),
+          status: user.status === UserStatus.invited ? UserStatus.active : user.status
+        }
+      });
+
+      // Fetch fresh user object with updated status and role/permissions
+      const updatedUser = await findUserForAuth(input.dealerSlug, input.email);
+      if (!updatedUser) {
+        throw new AppError(500, "USER_NOT_FOUND", "Failed to fetch updated user data.");
+      }
+
+      return issueTokenPair(updatedUser, metadata);
+    } catch (error) {
+      if (isDatabaseUnavailableError(error)) {
+        throw new AppError(503, "DATABASE_UNAVAILABLE", "The authentication database is currently unavailable.");
+      }
+
+      throw error;
+    }
   },
 
   async refresh(input: RefreshInput, metadata: RequestMetadata) {
@@ -136,54 +193,76 @@ export const authService = {
     }
 
     const tokenHash = hashToken(input.refreshToken);
-    const session = await prisma.session.findFirst({
-      where: {
-        id: payload.sessionId,
-        userId: payload.sub,
-        dealerId: payload.dealerId,
-        refreshTokenHash: tokenHash,
-        revokedAt: null,
-        deletedAt: null,
-        expiresAt: { gt: new Date() }
-      },
-      include: {
-        user: {
+
+    try {
+      return await prisma.$transaction(async (transaction) => {
+        const session = await transaction.session.findFirst({
+          where: {
+            id: payload.sessionId,
+            userId: payload.sub,
+            dealerId: payload.dealerId,
+            refreshTokenHash: tokenHash,
+            revokedAt: null,
+            deletedAt: null,
+            expiresAt: { gt: new Date() }
+          },
           include: {
-            dealer: true,
-            role: {
+            user: {
               include: {
-                permissions: {
+                dealer: true,
+                role: {
                   include: {
-                    permission: true
+                    permissions: {
+                      include: {
+                        permission: true
+                      }
+                    }
                   }
                 }
               }
             }
           }
-        }
-      }
-    });
+        });
 
-    if (
-      !session ||
-      session.user.status !== UserStatus.active ||
-      session.user.deletedAt ||
-      session.user.dealer.status !== DealerStatus.active ||
-      session.user.dealer.deletedAt
-    ) {
-      throw new AppError(401, "INVALID_REFRESH_TOKEN", "The refresh token is invalid or expired.");
+        if (
+          !session ||
+          session.user.status !== UserStatus.active ||
+          session.user.deletedAt ||
+          session.user.dealer.status !== DealerStatus.active ||
+          session.user.dealer.deletedAt
+        ) {
+          throw new AppError(401, "INVALID_REFRESH_TOKEN", "The refresh token is invalid or expired.");
+        }
+
+        const revoked = await transaction.session.updateMany({
+          where: {
+            id: session.id,
+            refreshTokenHash: tokenHash,
+            revokedAt: null
+          },
+          data: { revokedAt: new Date() }
+        });
+
+        if (revoked.count !== 1) {
+          throw new AppError(401, "INVALID_REFRESH_TOKEN", "The refresh token is invalid or expired.");
+        }
+
+        const next = await issueTokenPair(session.user, metadata, transaction);
+        await transaction.session.update({
+          where: { id: session.id },
+          data: { replacedBySessionId: next.sessionId }
+        });
+
+        return next;
+      });
+    } catch (error) {
+      if (isDatabaseUnavailableError(error)) {
+        throw new AppError(503, "DATABASE_UNAVAILABLE", "The authentication database is currently unavailable.");
+      }
+
+      throw error;
     }
 
-    const next = await issueTokenPair(session.user, metadata);
-    await prisma.session.update({
-      where: { id: session.id },
-      data: {
-        revokedAt: new Date(),
-        replacedBySessionId: next.sessionId
-      }
-    });
-
-    return next;
   },
 
   async logout(input: LogoutInput) {
@@ -325,5 +404,20 @@ export const authService = {
         data: { usedAt: new Date() }
       })
     ]);
+  },
+
+  async resendEmailVerification(input: ResendVerificationInput) {
+    const user = await findUserForAuth(input.dealerSlug, input.email);
+    if (!user || user.deletedAt || user.emailVerifiedAt) return { sent: true };
+
+    const token = await this.createEmailVerificationToken(user.id);
+    const verificationUrl = `${env.WEB_ORIGIN[0]}/verify-email?token=${encodeURIComponent(token.token)}`;
+    await emailService.sendDealerRegistrationEmail({
+      to: user.email,
+      dealerName: user.dealer.name,
+      dealerSlug: user.dealer.slug,
+      verificationUrl
+    });
+    return { sent: true };
   }
 };

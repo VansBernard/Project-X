@@ -4,12 +4,13 @@ React admin dashboard for Project X, built with Vite, TypeScript, and Tailwind C
 
 ## Features
 
-- Authentication screens for login, forgot password, and reset password
+- Authentication screens for login, forgot password, reset password, and signup
 - Protected dashboard shell with sidebar, topbar, logout, and mobile navigation
 - Dashboard overview with API health status
-- Tenants page backed by `GET /api/v1/admin/dealers`
-- Users page backed by the customer search endpoint, `GET /api/v1/customers`
-- Placeholder pages for Devices, Licenses / Unlock Tokens, Audit Logs, and Settings
+- Dealers page backed by `GET /api/v1/admin/dealers`
+- Devices page backed by `GET /api/v1/dealer/devices`
+- Payments page backed by `GET /api/v1/dealer/payments`
+- Settings page with browser-saved preferences; account/security updates are not yet wired to the API
 - Shared loading, error, empty, page header, and status badge components
 
 ## Getting Started
@@ -45,6 +46,17 @@ Build the dashboard:
 npm --workspace apps/admin run build
 ```
 
+## Deploy to Render
+
+The repository includes a `render.yaml` Blueprint for the admin static site. In Render, create a Blueprint from this repository and set:
+
+```text
+VITE_API_URL=https://your-api-host.example.com/api/v1
+VITE_DEALER_SLUG=your-production-dealer-slug
+```
+
+The Blueprint builds from the repository root, publishes `apps/admin/dist`, and rewrites client-side routes to `index.html` for `BrowserRouter`.
+
 Typecheck the dashboard:
 
 ```bash
@@ -70,16 +82,16 @@ Admin data methods:
 - `listDealers()` -> `GET /api/v1/admin/dealers`
 - `searchCustomers()` -> `GET /api/v1/customers`
 
-Tenants page requirements:
+Dealers page requirements:
 
 - Backend role: `super_admin`
 - Backend permission: `dealers:statistics`
 
-Users page requirements:
+Customer search API requirements:
 
 - Backend roles: `super_admin`, `dealer`, or `sales_agent`
 - Backend permission: `customers:read`
-- Note: this page currently displays customer records because there is no dedicated admin users endpoint yet.
+- Note: the current dashboard does not include a dedicated Users page, but the customer search endpoint is available for future user management features.
 
 ## Project Structure
 
@@ -117,14 +129,15 @@ apps/admin/
       LoginPage.tsx
       ForgotPasswordPage.tsx
       ResetPasswordPage.tsx
+      SignupPage.tsx
       DashboardPage.tsx
-      TenantsPage.tsx
-      UsersPage.tsx
+      DealersPage.tsx
       DevicesPage.tsx
-      LicensesPage.tsx
-      AuditLogsPage.tsx
+      PaymentsPage.tsx
       SettingsPage.tsx
 ```
+
+Note: The current admin app includes the pages above. The previously documented Dealers/Users/Licenses/AuditLogs pages are planned features and are not present in this repo yet.
 
 ## Troubleshooting
 

@@ -1,0 +1,81 @@
+<Window x:Class="DesktopAppFresh.LockWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Project X | Device Locked"
+        WindowStartupLocation="CenterScreen"
+        WindowStyle="None"
+        ResizeMode="NoResize"
+        WindowState="Maximized"
+        Topmost="True"
+        Background="#F5F7FB">
+    <Window.Resources>
+        <SolidColorBrush x:Key="BlueBrush" Color="#246BFE"/>
+        <SolidColorBrush x:Key="BluePaleBrush" Color="#E8EFFF"/>
+        <SolidColorBrush x:Key="InkBrush" Color="#102136"/>
+        <SolidColorBrush x:Key="MutedBrush" Color="#718096"/>
+        <SolidColorBrush x:Key="LineBrush" Color="#E4EAF2"/>
+        <SolidColorBrush x:Key="SurfaceBrush" Color="#FFFFFF"/>
+        <Style x:Key="FlatButton" TargetType="Button">
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="FontFamily" Value="{StaticResource BodyFont}"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="FontWeight" Value="600"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+    <Grid Background="#F5F7FB">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="78"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <Border Grid.Row="0" Background="{StaticResource SurfaceBrush}">
+            <Grid Margin="24,0,72,0">
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <Image Source="/Project X.png" Width="34" Height="34" Stretch="Uniform" Margin="0,0,10,0"/>
+                    <TextBlock Text="PROJECT X" FontFamily="{StaticResource DisplayFont}" FontSize="19" FontWeight="700" Foreground="{StaticResource InkBrush}" VerticalAlignment="Center"/>
+                </StackPanel>
+                <Button x:Name="ShutdownBtn" Style="{StaticResource FlatButton}" Width="78" Height="32" HorizontalAlignment="Right" VerticalAlignment="Center" Background="#FDE9E7" Foreground="#A92823" Content="Shutdown" Click="ShutdownBtn_Click"/>
+            </Grid>
+        </Border>
+        <Grid Grid.Row="1">
+            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                <StackPanel Width="520" HorizontalAlignment="Center" Margin="0,48,0,100">
+                    <TextBlock Text="Your device is locked" FontFamily="{StaticResource DisplayFont}" FontSize="35" FontWeight="600" Foreground="{StaticResource InkBrush}" TextAlignment="Center" Margin="0,0,0,12"/>
+                    <TextBlock Text="This device has reached its allocated time period and requires a valid license key to contiune. " FontFamily="{StaticResource BodyFont}" FontSize="15" Foreground="{StaticResource MutedBrush}" TextAlignment="Center" TextWrapping="Wrap" Width="370" HorizontalAlignment="Center" Margin="0,0,0,0"/>
+                    <Button x:Name="OpenPaymentQrBtn" Background="Transparent" BorderThickness="0" Padding="0" Cursor="Hand" Click="OpenPaymentQrBtn_Click">
+                     <Border Width="180" Height="180" Background="{StaticResource SurfaceBrush}" Padding="14"><Border Background="{StaticResource SurfaceBrush}" BorderBrush="{StaticResource LineBrush}" BorderThickness="1"><Image x:Name="PaymentQrImage" Stretch="Uniform"/></Border></Border>
+                    </Button>
+                    <Button x:Name="OpenPaymentUrlBtn" Style="{StaticResource FlatButton}" Background="Transparent" Padding="0" Margin="0,10,0,22" Click="OpenPaymentUrlBtn_Click"><TextBlock x:Name="PaymentUrlText" Text="Preparing secure payment link..." FontFamily="{StaticResource BodyFont}" FontSize="11" Foreground="{StaticResource MutedBrush}" TextAlignment="Center" TextDecorations="Underline" TextWrapping="Wrap" Width="360"/></Button>
+                     <TextBlock Text="Scan the QR code to make your payment. Once payment is confirmed, your license key that will be sent to your registered email. Enter the license key below to unlock your device." FontFamily="{StaticResource BodyFont}" FontSize="14" Foreground="{StaticResource MutedBrush}" TextAlignment="Center" TextWrapping="Wrap" Margin="0,0,0,0"/>  
+                    <TextBlock Text="Verification code" FontFamily="{StaticResource BodyFont}" FontSize="12" FontWeight="700" Foreground="{StaticResource InkBrush}" Margin="0,0,0,10"/>
+                    <TextBox x:Name="LicenseKeyBox" Height="44" Padding="12,0" Background="{StaticResource SurfaceBrush}" BorderThickness="0" FontFamily="{StaticResource BodyFont}" FontSize="13" Foreground="{StaticResource InkBrush}" VerticalContentAlignment="Center" Text="XXXX-XXXX-XXXX-XXXX" GotFocus="LicenseKeyBox_GotFocus" LostFocus="LicenseKeyBox_LostFocus" KeyDown="LicenseKeyBox_KeyDown"/>
+                    <Button x:Name="VerifyKeyBtn" Style="{StaticResource FlatButton}" Height="44" Margin="0,16,0,0" Background="{StaticResource BlueBrush}" Foreground="White" FontSize="13" Content="Verify device" Click="VerifyKeyBtn_Click"/>
+                    <Border Background="#F9FAFB" BorderBrush="{StaticResource LineBrush}" Padding="12,10" Margin="0,14,0,0"><TextBlock x:Name="InfoText" Text="Having trouble? Contact Project X support for assistance." FontFamily="{StaticResource BodyFont}" FontSize="11" Foreground="{StaticResource MutedBrush}" TextAlignment="Center" TextWrapping="Wrap"/></Border>
+                    <TextBlock x:Name="RecoveryIdText" Visibility="Collapsed"/>
+                </StackPanel>
+            </ScrollViewer>
+            <Button x:Name="RecoveryBtn" Style="{StaticResource FlatButton}" Width="82" Height="32" HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="24,0,0,20" Background="{StaticResource BluePaleBrush}" Foreground="#2253BB" Content="Recovery" Click="RecoveryBtn_Click"/>
+            <Border x:Name="RecoveryPanel" Width="360" HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="24,0,0,64" Background="{StaticResource SurfaceBrush}" Padding="22" Visibility="Collapsed">
+                <Border.Effect><DropShadowEffect Color="#122D4C" Opacity="0.12" BlurRadius="24" ShadowDepth="8"/></Border.Effect>
+                <StackPanel>
+                    <TextBlock Text="Device recovery" FontFamily="{StaticResource DisplayFont}" FontSize="18" FontWeight="600" Foreground="{StaticResource InkBrush}" Margin="0,0,0,6"/>
+                    <TextBlock Text="Use these details when contacting Project X support or recovering this device." FontFamily="{StaticResource BodyFont}" FontSize="12" Foreground="{StaticResource MutedBrush}" TextWrapping="Wrap" Margin="0,0,0,12"/>
+                    <Grid Margin="0,0,0,5"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><TextBlock Text="Device name" FontFamily="{StaticResource BodyFont}" FontSize="11" Foreground="{StaticResource MutedBrush}"/><TextBlock x:Name="RecoveryDeviceNameText" Grid.Column="1" Text="-" FontFamily="{StaticResource BodyFont}" FontSize="11" FontWeight="700" Foreground="{StaticResource InkBrush}" TextWrapping="Wrap"/></Grid>
+                    <Grid Margin="0,0,0,5"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><TextBlock Text="Operating system" FontFamily="{StaticResource BodyFont}" FontSize="11" Foreground="{StaticResource MutedBrush}"/><TextBlock x:Name="RecoveryOperatingSystemText" Grid.Column="1" Text="-" FontFamily="{StaticResource BodyFont}" FontSize="11" FontWeight="700" Foreground="{StaticResource InkBrush}" TextWrapping="Wrap"/></Grid>
+                    <Grid Margin="0,0,0,5"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><TextBlock Text="Device ID" FontFamily="{StaticResource BodyFont}" FontSize="11" Foreground="{StaticResource MutedBrush}"/><TextBlock x:Name="RecoveryDeviceIdText" Grid.Column="1" Text="-" FontFamily="{StaticResource BodyFont}" FontSize="11" FontWeight="700" Foreground="{StaticResource InkBrush}" TextWrapping="Wrap" MaxWidth="220"/></Grid>
+                    <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><TextBlock Text="Recovery ID" FontFamily="{StaticResource BodyFont}" FontSize="11" Foreground="{StaticResource MutedBrush}"/><TextBlock x:Name="RecoveryIdDetailText" Grid.Column="1" Text="-" FontFamily="{StaticResource BodyFont}" FontSize="11" FontWeight="700" Foreground="{StaticResource InkBrush}" TextWrapping="Wrap" MaxWidth="220"/></Grid>
+                    <Button x:Name="CloseRecoveryBtn" Style="{StaticResource FlatButton}" Height="34" Margin="0,12,0,0" Background="{StaticResource BluePaleBrush}" Foreground="{StaticResource BlueBrush}" Content="Close" Click="CloseRecoveryBtn_Click"/>
+                </StackPanel>
+            </Border>
+        </Grid>
+    </Grid>
+</Window>

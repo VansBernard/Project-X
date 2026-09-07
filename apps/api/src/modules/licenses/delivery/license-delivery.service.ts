@@ -1,4 +1,4 @@
-import { LicenseDeliveryStatus, PaymentStatus } from "@prisma/client";
+import { ContractStatus, LicenseDeliveryStatus, PaymentStatus } from "@prisma/client";
 import { env } from "../../../config/env.js";
 import { AppError } from "../../../middleware/error.middleware.js";
 import { prisma } from "../../../lib/prisma.js";
@@ -25,19 +25,16 @@ function paymentInformation(payment: { amount: unknown; currency: string; provid
 }
 
 function licenseExpiration(payment: {
-  contract: {
-    nextDueDate: Date | null;
-    endDate: Date | null;
-  } | null;
+  contract: { metadata: unknown } | null;
 }) {
-  const now = new Date();
-  const configured = payment.contract?.nextDueDate ?? payment.contract?.endDate;
+  const plan = payment.contract?.metadata && typeof payment.contract.metadata === "object" && !Array.isArray(payment.contract.metadata)
+    ? (payment.contract.metadata as Record<string, unknown>).paymentPlan
+    : undefined;
+  const validityDays = plan === "weekly" ? 7 : plan === "yearly" ? 365 : 30;
 
-  if (configured && configured.getTime() > now.getTime()) {
-    return configured;
-  }
-
-  return new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+  // Each successful payment starts a fresh, fixed unlock window. This prevents
+  // a missed payment from inheriting an old future due-date as its expiry.
+  return new Date(Date.now() + validityDays * 24 * 60 * 60 * 1000);
 }
 
 export const licenseDeliveryService = {
@@ -97,13 +94,33 @@ export const licenseDeliveryService = {
       return job;
     }
 
-    const processingJob = await prisma.licenseDeliveryJob.update({
-      where: { id: job.id },
+    const claim = await prisma.licenseDeliveryJob.updateMany({
+      where: {
+        id: job.id,
+        deletedAt: null,
+        status: {
+          in: [LicenseDeliveryStatus.queued, LicenseDeliveryStatus.retrying]
+        }
+      },
       data: {
         status: LicenseDeliveryStatus.processing,
         attempts: { increment: 1 }
       }
     });
+
+    if (claim.count !== 1) {
+      const currentJob = await prisma.licenseDeliveryJob.findFirst({
+        where: { id: job.id, deletedAt: null }
+      });
+
+      if (currentJob?.status === LicenseDeliveryStatus.sent) {
+        return currentJob;
+      }
+
+      throw new AppError(409, "LICENSE_DELIVERY_IN_PROGRESS", "License delivery is already being processed.");
+    }
+
+    const processingAttempts = job.attempts + 1;
 
     try {
       const payment = job.payment;
@@ -120,7 +137,8 @@ export const licenseDeliveryService = {
         throw new AppError(400, "PAYMENT_CONTRACT_DEVICE_REQUIRED", "Payment contract must have an assigned device.");
       }
 
-      const license =
+      const licenseType = payment.contract?.status === ContractStatus.completed ? "permanent" : "temporary";
+      let license =
         job.licenseId
           ? await prisma.license.findFirst({
               where: {
@@ -129,16 +147,74 @@ export const licenseDeliveryService = {
                 deletedAt: null
               }
             })
-          : await licenseService.issue(job.dealerId, {
+          : null;
+
+      // The permanent recovery key is created at registration and remains
+      // visible to the dealer as pending until the one-time payment completes.
+      if (!license && licenseType === "permanent") {
+        license = await prisma.license.findFirst({
+          where: {
+            dealerId: job.dealerId,
+            customerId: payment.customerId,
+            deviceId: payment.contract.deviceId,
+            contractId: payment.contract.id,
+            licenseType: "permanent",
+            status: "pending",
+            deletedAt: null
+          },
+          orderBy: { createdAt: "asc" }
+        });
+
+        if (license) {
+          license = await prisma.license.update({
+            where: { id: license.id },
+            data: { status: "active", issuedAt: new Date() }
+          });
+        }
+      }
+
+      if (!license && licenseType === "temporary") {
+        const pendingVouchers = await prisma.license.findMany({
+          where: {
+            dealerId: job.dealerId,
+            customerId: payment.customerId,
+            deviceId: payment.contract.deviceId,
+            contractId: payment.contract.id,
+            licenseType: "temporary",
+            status: "pending",
+            deletedAt: null
+          },
+          orderBy: { createdAt: "asc" }
+        });
+        const now = new Date();
+        const voucher = pendingVouchers.find((candidate) => {
+          const metadata = candidate.metadata;
+          return candidate.expiresAt && candidate.expiresAt > now
+            && metadata && typeof metadata === "object" && !Array.isArray(metadata)
+            && (metadata as Record<string, unknown>).source === "desktop-registration-voucher";
+        });
+
+        if (voucher) {
+          license = await prisma.license.update({
+            where: { id: voucher.id },
+            data: { status: "active", issuedAt: new Date() }
+          });
+        }
+      }
+
+      if (!license) {
+        license = await licenseService.issue(job.dealerId, {
               deviceId: payment.contract.deviceId,
               contractId: payment.contract.id,
-              expiresAt: licenseExpiration(payment),
+              licenseType,
+              expiresAt: licenseType === "temporary" ? licenseExpiration(payment) : undefined,
               metadata: {
                 source: "successful_payment",
                 paymentId: payment.id,
                 paymentReference: payment.providerReference
               }
             });
+      }
 
       if (!license) {
         throw new AppError(500, "LICENSE_NOT_AVAILABLE", "License could not be created or loaded.");
@@ -149,8 +225,9 @@ export const licenseDeliveryService = {
         customerName: customerName(payment.customer),
         deviceInformation: deviceInformation(payment.contract.device),
         paymentInformation: paymentInformation(payment),
-        expirationDate: license.expiresAt?.toISOString() ?? "",
-        licenseKey: license.licenseKey
+        expirationDate: licenseType === "permanent" ? "Permanent unlock license" : license.expiresAt?.toISOString() ?? "",
+        licenseKey: license.licenseKey,
+        licenseType
       });
 
       return prisma.licenseDeliveryJob.update({
@@ -164,7 +241,7 @@ export const licenseDeliveryService = {
         }
       });
     } catch (error) {
-      const attempts = processingJob.attempts;
+      const attempts = processingAttempts;
       const retryable = attempts < env.LICENSE_DELIVERY_MAX_ATTEMPTS;
 
       await prisma.licenseDeliveryJob.update({

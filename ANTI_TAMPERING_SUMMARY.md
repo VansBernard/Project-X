@@ -78,6 +78,8 @@ docs/security/
 ├── anti-tampering-integration.md              (Integration guide)
 └── 
 
+The current, canonical desktop prototype is implemented in `apps/DesktopApp1/DesktopAppFresh`. References to `apps/desktop/ProjectX.Desktop` in this summary describe a future production layout only.
+
 apps/desktop/ProjectX.Desktop/Services/Tampering/
 └── README.md                                  (Service documentation)
 ```

@@ -54,10 +54,48 @@ npm run dev:api
 
 🎉 **API running at** `http://localhost:4000`
 
+## 6️⃣ Start Admin Dashboard
+
+In a second terminal:
+
+```bash
+npm run dev:admin
+```
+
+The dashboard should be available at `http://localhost:5173`.
+
+## Troubleshooting Login
+
+If login shows `Request failed: Failed to fetch`:
+
+- Ensure the backend API is running on `http://localhost:4000`.
+- Confirm `apps/admin/.env` or `apps/admin/.env.local` contains:
+
+```text
+VITE_API_URL=http://localhost:4000/api/v1
+VITE_DEALER_SLUG=your-dealer-slug
+```
+
+- Verify the health endpoint returns success:
+
+```bash
+curl http://localhost:4000/api/v1/health
+```
+
+Expected response:
+
+```json
+{
+  "status": "ok"
+}
+```
+
+- Reload the browser at `http://localhost:5173`.
+
 ## Test the Setup
 
 ```bash
-# Health check
+# Health check`
 curl http://localhost:4000/api/v1/health
 ```
 

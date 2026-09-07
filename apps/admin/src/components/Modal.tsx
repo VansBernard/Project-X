@@ -43,6 +43,7 @@ export function Modal({
         <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
           <h2 className="text-xl font-bold text-gray-900 dark:text-white">{title}</h2>
           <button
+            type="button"
             onClick={onClose}
             className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
           >
@@ -54,21 +55,19 @@ export function Modal({
         <div className="p-6">{children}</div>
 
         {/* Footer */}
-        {(onConfirm || onClose) && (
-          <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-200 dark:border-gray-700">
-            <Button variant="secondary" onClick={onClose}>
-              {cancelText}
+        <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-200 dark:border-gray-700">
+          <Button variant="secondary" onClick={onClose}>
+            {cancelText}
+          </Button>
+          {onConfirm && (
+            <Button
+              variant={isDangerous ? 'danger' : 'primary'}
+              onClick={onConfirm}
+            >
+              {confirmText}
             </Button>
-            {onConfirm && (
-              <Button
-                variant={isDangerous ? 'danger' : 'primary'}
-                onClick={onConfirm}
-              >
-                {confirmText}
-              </Button>
-            )}
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </div>
   );

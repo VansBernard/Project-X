@@ -1,0 +1,174 @@
+name: Project quality
+
+permissions:
+  contents: read
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  api:
+    name: API test and build
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: project_x
+        ports:
+          - 65432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d project_x"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Validate Prisma schema
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:65432/project_x?connect_timeout=1
+        run: npm run db:validate
+
+      - name: Generate test license key pair
+        shell: bash
+        run: |
+          openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:4096 -out license-private.pem
+          openssl rsa -pubout -in license-private.pem -out license-public.pem
+          echo "LICENSE_PRIVATE_KEY_PEM_BASE64=$(base64 -w 0 license-private.pem)" >> "$GITHUB_ENV"
+          echo "LICENSE_PUBLIC_KEY_PEM_BASE64=$(base64 -w 0 license-public.pem)" >> "$GITHUB_ENV"
+          rm license-private.pem license-public.pem
+
+      - name: Apply Prisma migrations
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:65432/project_x?connect_timeout=5
+        run: npm --workspace @project-x/api run prisma:migrate:deploy
+
+      - name: Run API tests
+        env:
+          NODE_ENV: test
+          DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:65432/project_x?connect_timeout=1
+          JWT_ACCESS_SECRET: ci-access-secret-that-is-at-least-32-characters
+          JWT_REFRESH_SECRET: ci-refresh-secret-that-is-at-least-32-characters
+          PAYSTACK_SECRET_KEY: sk_test_ci
+          PAYSTACK_PUBLIC_KEY: pk_test_ci
+          SMTP_HOST: smtp.example.test
+          SMTP_USER: ci
+          SMTP_PASS: ci
+          EMAIL_FROM: Project X CI <ci@example.test>
+        run: npm --workspace @project-x/api run test
+
+      - name: Build API production artifact
+        run: npm --workspace @project-x/api run build
+
+  admin:
+    name: Admin test and build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Admin tests
+        run: npm --workspace @project-x/admin run test
+
+      - name: Build Admin production bundle
+        run: npm --workspace @project-x/admin run build
+
+  desktop:
+    name: Desktop test and build
+    runs-on: windows-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore desktop dependencies
+        run: dotnet restore apps/DesktopApp1/DesktopAppFresh/DesktopAppFresh.csproj
+
+      - name: Run desktop tests
+        run: dotnet test apps/DesktopApp1/DesktopAppFresh/DesktopAppFresh.csproj --configuration Release --no-restore
+
+      - name: Build desktop Release artifact
+        run: dotnet build apps/DesktopApp1/DesktopAppFresh/DesktopAppFresh.csproj --configuration Release --no-restore
+
+  dependency-audit:
+    name: Production dependency audit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Audit production dependencies
+        run: npm audit --workspaces --include-workspace-root --audit-level=high
+
+  secret-scan:
+    name: Secret scan
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Scan repository history and changes for secrets
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  required-gates:
+    name: Required quality gates
+    if: ${{ always() }}
+    needs:
+      - api
+      - admin
+      - desktop
+      - dependency-audit
+      - secret-scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require every quality job to pass
+        if: ${{ needs.api.result != 'success' || needs.admin.result != 'success' || needs.desktop.result != 'success' || needs.dependency-audit.result != 'success' || needs.secret-scan.result != 'success' }}
+        run: exit 1
+
+      - name: Quality gates passed
+        run: echo "API, admin, desktop, dependency, and secret gates passed."

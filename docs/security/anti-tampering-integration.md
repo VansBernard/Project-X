@@ -1,5 +1,7 @@
 # Anti-Tampering System Integration Guide
 
+> Note: this documentation uses the planned production desktop client layout under `apps/desktop/ProjectX.Desktop`. The current repository contains the prototype at `apps/DesktopApp1/DesktopAppFresh`.
+
 ## Quick Start
 
 ### 1. Register Services (Program.cs or DI Configuration)

@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Project X | Device Locked</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --navy: #0b1c30;
+      --blue: #246bfe;
+      --blue-pale: #e8efff;
+      --ink: #102136;
+      --muted: #718096;
+      --line: #e4eaf2;
+      --surface: #ffffff;
+      --canvas: #f5f7fb;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; color: var(--ink); background: var(--canvas); font-family: "DM Sans", sans-serif; }
+    .page { min-height: 100vh; display: flex; flex-direction: column; }
+    .topbar { height: 78px; padding: 0 clamp(24px, 5vw, 72px); display: flex; align-items: center; justify-content: space-between; background: var(--surface); }
+    .brand { display: flex; align-items: center; gap: 10px; color: var(--ink); font: 700 19px "Space Grotesk", sans-serif; letter-spacing: -.05em; }
+    .brand img { width: 34px; height: 34px; display: block; object-fit: contain; }
+    .shutdown-button { min-width: 78px; height: 32px; padding: 0 12px; border: 0; border-radius: 0; color: #a92823; background: #fde9e7; font: 600 11px "DM Sans", sans-serif; }
+    .shutdown-button:hover { color: #8e211d; background: #f8d8d5; }
+    .recovery-button { position: fixed; left: 24px; bottom: 20px; min-width: 82px; height: 32px; padding: 0 12px; border: 0; border-radius: 0; color: #2253bb; background: var(--blue-pale); font: 600 11px "DM Sans", sans-serif; }
+    .recovery-button:hover { color: #17439c; background: #d8e4ff; }
+    .recovery-panel { position: fixed; left: 24px; bottom: 64px; width: min(360px, calc(100% - 48px)); padding: 22px; background: #ffffff; box-shadow: 0 8px 24px rgba(18, 45, 76, .12); }
+    .recovery-panel[hidden] { display: none; }
+    .recovery-panel h2 { margin: 0 0 6px; font: 600 18px "Space Grotesk", sans-serif; letter-spacing: -.04em; }
+    .recovery-panel p { margin: 0 0 16px; color: var(--muted); font-size: 12px; line-height: 1.5; }
+    .recovery-detail { display: flex; justify-content: space-between; gap: 16px; padding: 9px 0; color: var(--muted); font-size: 11px; }
+    .recovery-detail strong { color: var(--ink); font-size: 11px; text-align: right; word-break: break-all; }
+    .close-recovery { width: 100%; height: 34px; margin-top: 12px; border: 0; border-radius: 0; color: var(--blue); background: var(--blue-pale); font: 600 11px "DM Sans", sans-serif; }
+    .content { width: min(100% - 32px, 520px); margin: auto; padding: 48px 0; }
+    .card { padding: 38px; padding-top: 0px; background: transparent; text-align: center; }
+    .lock-badge { width: 52px; height: 52px; margin: 0 auto 20px; display: grid; place-items: center; color: var(--blue); background: var(--blue-pale); font: 700 12px "Space Grotesk", sans-serif; }
+    .eyebrow { margin: 0 0 9px; color: var(--blue); font-size: 11px; font-weight: 700; letter-spacing: .13em; text-transform: uppercase; }
+    h1 { margin: 0 0 12px; font: 600 30px "Space Grotesk", sans-serif; letter-spacing: -.06em; }
+    .intro { max-width: 370px; margin-bottom: 0px; margin: 0 auto 26px; color: var(--muted); font-size: 13px; line-height: 1.6; }
+    .device-status { display: inline-flex; align-items: center; gap: 7px; margin-bottom: 26px; padding: 7px 10px; border-radius: 5px; color: #a35a16; background: #fff4e5; font-size: 11px; font-weight: 700; }
+    .device-status span { width: 7px; height: 7px; border-radius: 50%; background: #de7c21; }
+    .qr-box { width: 172px; height: 172px; margin: 0 auto 24px; padding: 14px; display: grid; place-items: center; background: #ffffff; }
+    .qr-pattern { width: 136px; height: 136px; padding: 10px; background: repeating-linear-gradient(0deg, #ffffff 0 5px, var(--ink) 5px 9px), repeating-linear-gradient(90deg, transparent 0 5px, rgba(16, 33, 54, .9) 5px 9px); background-blend-mode: multiply; }
+    .qr-pattern::after { content: "QR"; width: 42px; height: 42px; display: grid; place-items: center; margin: 32px auto 0; color: var(--ink); background: var(--surface); font: 700 11px "Space Grotesk", sans-serif; }
+    .qr-label { margin: 0 0 22px; color: var(--muted); font-size: 11px; }
+    .verify-form { display: grid; gap: 10px; text-align: left; }
+    .field-label { color: var(--ink); font-size: 12px; font-weight: 700; }
+    .verify-input { width: 100%; height: 44px; padding: 0 12px; border: 0; color: var(--ink); background: #ffffff; font: 13px "DM Sans", sans-serif; outline: none; }
+    .verify-input:focus { background: var(--blue-pale); }
+    .verify-button { width: 100%; height: 44px; margin-top: 6px; border: 0; border-radius: 0; color: #ffffff; background: var(--blue); font: 700 13px "DM Sans", sans-serif; }
+    .verify-button:hover { background: #1458df; }
+    .help-text { margin: 24px 0 0; color: var(--muted); font-size: 11px; line-height: 1.5; }
+    @media (max-width: 560px) { .topbar { height: 64px; padding: 0 18px; } .brand span { display: none; } .content { width: min(100% - 24px, 520px); padding: 24px 0; } .card { padding: 30px 20px; } }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header class="topbar">
+      <div class="brand"><img src="Project X.png" alt="Project X logo" /><span>PROJECT X</span></div>
+      <button class="shutdown-button" type="button">Shutdown</button>
+    </header>
+    <main class="content">
+      <section class="card" aria-labelledby="lock-title">
+        <h1 id="lock-title">Ummm... Your device is locked</h1>
+        <p class="intro">This device needs to be verified before you can continue using Project X.</p>
+        <div class="qr-box" aria-label="QR code placeholder"><div class="qr-pattern"></div></div>
+        <p class="qr-label">Scan this QR code with your registered device</p>
+        <form class="verify-form">
+          <label class="field-label" for="verification-code">Verification code</label>
+          <input class="verify-input" id="verification-code" type="text" placeholder="Enter your code" autocomplete="one-time-code" />
+          <button class="verify-button" type="submit">Verify device</button>
+        </form>
+        <p class="help-text">Having trouble? Contact Project X support for assistance.</p>
+      </section>
+    </main>
+    <button class="recovery-button" id="recoveryButton" type="button">Recovery</button>
+    <section class="recovery-panel" id="recoveryPanel" hidden aria-labelledby="recovery-title">
+      <h2 id="recovery-title">Device recovery</h2>
+      <p>Use these details when contacting Project X support or recovering this device.</p>
+      <div class="recovery-detail"><span>Device name</span><strong>Project X Pro</strong></div>
+      <div class="recovery-detail"><span>Operating system</span><strong>Windows 11 Enterprise</strong></div>
+      <div class="recovery-detail"><span>Device ID</span><strong>1a6d70fc-6be8-4312-ab06-aa0d0c0857140</strong></div>
+      <div class="recovery-detail"><span>Recovery ID</span><strong>PX-REC-20260804-6789</strong></div>
+      <button class="close-recovery" id="closeRecovery" type="button">Close</button>
+    </section>
+  </div>
+  <script>
+    const recoveryButton = document.getElementById("recoveryButton");
+    const recoveryPanel = document.getElementById("recoveryPanel");
+    const closeRecovery = document.getElementById("closeRecovery");
+
+    recoveryButton.addEventListener("click", () => {
+      recoveryPanel.hidden = false;
+    });
+
+    closeRecovery.addEventListener("click", () => {
+      recoveryPanel.hidden = true;
+    });
+  </script>
+</body>
+</html>

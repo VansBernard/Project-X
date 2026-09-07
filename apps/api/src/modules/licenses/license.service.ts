@@ -13,6 +13,10 @@ function assertFutureDate(date: Date) {
   }
 }
 
+function licenseKeyHash(licenseKey: string) {
+  return crypto.createHash("sha256").update(licenseKey).digest("hex");
+}
+
 function payloadFromRecord(record: {
   id: string;
   deviceId: string;
@@ -21,11 +25,24 @@ function payloadFromRecord(record: {
   expiresAt: Date | null;
   keyId: string;
   signatureAlgorithm: string;
+  licenseKey: string;
+  signedPayload?: unknown;
   licenseType?: "temporary" | "permanent" | null;
 }): LicensePayload {
   if (!record.contractId || !record.issuedAt) {
     throw new AppError(500, "INVALID_LICENSE_RECORD", "License record is missing required signed fields.");
   }
+
+  const storedKeyHash =
+    record.signedPayload && typeof record.signedPayload === "object" && !Array.isArray(record.signedPayload)
+      && typeof (record.signedPayload as Record<string, unknown>).licenseKeyHash === "string"
+      ? (record.signedPayload as Record<string, string>).licenseKeyHash
+      : undefined;
+  const storedHardwareFingerprint =
+    record.signedPayload && typeof record.signedPayload === "object" && !Array.isArray(record.signedPayload)
+      && typeof (record.signedPayload as Record<string, unknown>).hardwareFingerprint === "string"
+      ? (record.signedPayload as Record<string, string>).hardwareFingerprint
+      : undefined;
 
   return {
     licenseId: record.id,
@@ -35,7 +52,9 @@ function payloadFromRecord(record: {
     expiresAt: record.expiresAt?.toISOString(),
     licenseType: record.licenseType ?? "temporary",
     keyId: record.keyId,
-    algorithm: "RSA-SHA256"
+    algorithm: "RSA-SHA256",
+    ...(storedHardwareFingerprint ? { hardwareFingerprint: storedHardwareFingerprint } : {}),
+    ...(storedKeyHash ? { licenseKeyHash: storedKeyHash } : {})
   };
 }
 
@@ -74,13 +93,19 @@ export const licenseService = {
     if (!contract.device || contract.device.deletedAt) {
       throw new AppError(404, "DEVICE_NOT_FOUND", "Assigned device was not found.");
     }
+    if (!contract.device.hardwareFingerprint) {
+      throw new AppError(400, "DEVICE_FINGERPRINT_REQUIRED", "A device hardware fingerprint is required to issue a license.");
+    }
 
     const issuedAt = new Date();
 
-    function generateNumericKey(len = 20) {
+    function generateLicenseKey(len = 20) {
+      // Avoid visually ambiguous characters (0/O, 1/I/L) so a customer can
+      // reliably type the 20-character recovery code from an email or SMS.
+      const alphabet = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
       let out = '';
       for (let i = 0; i < len; i++) {
-        out += String(crypto.randomInt(0, 10));
+        out += alphabet[crypto.randomInt(0, alphabet.length)];
       }
       return out;
     }
@@ -100,12 +125,12 @@ export const licenseService = {
         customerId: contract.customerId,
         deviceId: input.deviceId,
         contractId: input.contractId,
-        licenseKey: generateNumericKey(20),
+        licenseKey: generateLicenseKey(20),
         keyId: env.LICENSE_KEY_ID,
         signedPayload: {},
         signature: "",
         signatureAlgorithm: "RSA-SHA256",
-        status: LicenseStatus.active,
+        status: input.preProvisioned ? LicenseStatus.pending : LicenseStatus.active,
         issuedAt,
         expiresAt: input.expiresAt,
         licenseType: input.licenseType,
@@ -129,7 +154,9 @@ export const licenseService = {
       expiresAt: input.expiresAt?.toISOString(),
       licenseType: input.licenseType,
       keyId: env.LICENSE_KEY_ID,
-      algorithm: "RSA-SHA256"
+      algorithm: "RSA-SHA256",
+      hardwareFingerprint: contract.device.hardwareFingerprint,
+      licenseKeyHash: licenseKeyHash(license.licenseKey)
     };
     const signature = licenseSigningService.sign(payload);
 
@@ -160,7 +187,7 @@ export const licenseService = {
           { licenseType: "permanent" }
         ]
       },
-      orderBy: { expiresAt: "desc" }
+      orderBy: { createdAt: "desc" }
     });
 
     for (const license of licenses) {
@@ -214,7 +241,7 @@ export const licenseService = {
       Object.assign(where, { customerId: params.customerId });
     }
 
-    return prisma.license.findMany({
+    const licenses = await prisma.license.findMany({
       where,
       include: {
         customer: true,
@@ -226,6 +253,10 @@ export const licenseService = {
       skip: params.cursor ? 1 : 0,
       cursor: params.cursor ? { id: params.cursor } : undefined
     });
+
+    return licenses.map((license) =>
+      license.status === LicenseStatus.active ? license : { ...license, licenseKey: null }
+    );
   },
 
   async detail(dealerId: string, licenseId: string) {
@@ -246,7 +277,7 @@ export const licenseService = {
       throw new AppError(404, "LICENSE_NOT_FOUND", "License was not found.");
     }
 
-    return license;
+    return license.status === LicenseStatus.active ? license : { ...license, licenseKey: null };
   },
 
   async activeForDevice(dealerId: string, deviceId: string) {
@@ -261,8 +292,14 @@ export const licenseService = {
           { licenseType: "permanent" }
         ]
       },
-      orderBy: { expiresAt: "desc" }
+      orderBy: { createdAt: "desc" }
     });
+
+    // Keep the dealer's permanent recovery key out of the normal desktop flow
+    // while an active temporary payment voucher is available.
+    licenses.sort((left, right) =>
+      (left.licenseType === "temporary" ? 0 : 1) - (right.licenseType === "temporary" ? 0 : 1)
+    );
 
     for (const license of licenses) {
       const payload = payloadFromRecord(license);

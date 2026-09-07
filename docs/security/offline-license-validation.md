@@ -53,11 +53,13 @@ The validation path performs no network calls. Online sync may refresh the cache
 
 ## Public Key
 
-The desktop public key lives in:
+The desktop public key is planned to live in the future production desktop layout at:
 
 ```text
 apps/desktop/ProjectX.Desktop/Infrastructure/Configuration/PublicLicenseKey.cs
 ```
+
+The canonical current desktop prototype is implemented in `apps/DesktopApp1/DesktopAppFresh`.
 
 The backend private key must never be included in the desktop client.
 

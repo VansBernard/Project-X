@@ -1,7 +1,7 @@
 import type { Request, Response } from "express";
 import { AppError } from "../../middleware/error.middleware.js";
 import { licenseService } from "./license.service.js";
-import type { IssueLicenseInput, VerifyLicenseInput } from "./license.schemas.js";
+import type { IssueLicenseInput, VerifyLicenseInput, ListLicensesQuery } from "./license.schemas.js";
 
 function dealerIdFromAuth(req: Request<any, any, any, any>): string {
   if (!req.auth?.dealerId) {
@@ -18,8 +18,13 @@ export const licenseController = {
   },
 
   async verify(req: Request<object, object, VerifyLicenseInput>, res: Response) {
-    const result = await licenseService.verify(req.body);
+    const result = await licenseService.verify(dealerIdFromAuth(req), req.body);
     return res.status(200).json({ data: result });
+  },
+
+  async list(req: Request<any, any, any, ListLicensesQuery>, res: Response) {
+    const licenses = await licenseService.list(dealerIdFromAuth(req), req.query);
+    return res.status(200).json({ data: licenses });
   },
 
   async detail(req: Request<{ licenseId: string }>, res: Response) {

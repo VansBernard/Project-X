@@ -9,6 +9,7 @@ import {
   deviceLicenseParamsSchema,
   issueLicenseSchema,
   licenseParamsSchema,
+  listLicensesSchema,
   verifyLicenseSchema
 } from "./license.schemas.js";
 
@@ -32,6 +33,14 @@ licenseRouter.post(
   requirePermission(Permissions.LicensesVerify),
   validate(verifyLicenseSchema),
   asyncHandler(licenseController.verify)
+);
+
+licenseRouter.get(
+  "/licenses",
+  requireRole(...licenseOperatorRoles),
+  requirePermission(Permissions.LicensesRead),
+  validate(listLicensesSchema, "query"),
+  asyncHandler(licenseController.list)
 );
 
 licenseRouter.get(

@@ -1,0 +1,736 @@
+1. Permanent Release Behavior
+1. Should permanent release work while the device is completely offline?
+
+No.
+
+Permanent release should be an online/backend-controlled operation.
+
+The locked device's offline mechanism is for temporary recovery only.
+
+If a device needs to be permanently released:
+
+Dealer submits the appropriate action from the dashboard.
+Backend verifies the request.
+Required dealer/admin approval occurs.
+Backend changes the device's permanent state.
+Device synchronizes that state when it connects.
+
+This avoids giving an offline recovery credential permanent authority.
+
+2. Once permanently released, should the device remain unlocked if the contract is partially paid?
+
+This needs to be treated as a business-approved release, not as payment completion.
+
+If the business explicitly approves permanent release, the device can remain permanently released even if the contract has an outstanding balance.
+
+However:
+
+Permanent release must never automatically change payment status to PAID.
+
+Payment and device-access status remain separate.
+
+3. Should permanent release disable future payment-based locking?
+
+Yes.
+
+If the device has been officially permanently released, normal payment-based locking should no longer apply to that device.
+
+Otherwise it isn't actually a permanent release.
+
+4. Can a permanently released device later be locked again?
+
+Not through normal payment enforcement.
+
+If the permanent release was made incorrectly, an authorized administrator can perform a separate Revoke Permanent Release operation.
+
+That is an administrative action, not normal payment locking.
+
+5. If reversal is needed, when does revocation take effect?
+
+Because permanent release is online-controlled:
+
+Server records the revocation.
+Device receives it the next time it connects.
+Until then, the device may continue operating offline.
+
+This is another reason we are not allowing permanent release through the offline recovery mechanism.
+
+2. Temporary Recovery
+
+This is the part that happens directly from the locked screen.
+
+6. Default recovery duration?
+
+36 hours.
+
+This gives the dealer enough time to solve a technical problem without giving unnecessarily long access.
+
+7. Can dealers choose the duration?
+
+No.
+
+The server/business rules should control the duration.
+
+The dealer simply requests:
+
+Recover Device
+
+The system determines the allowed duration.
+
+8. Should temporary recovery be single-use?
+
+Yes.
+
+Each recovery authorization should be usable once.
+
+After the device successfully accepts it:
+
+USED
+
+A new recovery must be generated if another recovery is required later.
+
+Each device may successfully use temporary recovery no more than twice. A third valid attempt must be rejected with "Limit hit".
+
+9. Can another recovery be issued while one is active?
+
+Not normally.
+
+If the device already has an active recovery, the dealer should see its remaining time.
+
+If an extension is genuinely required, the dealer can request a new recovery according to the appropriate permission/rules.
+
+Don't allow unlimited overlapping recovery authorizations.
+
+10. Should temporary recovery provide full Windows access?
+
+Yes.
+
+The purpose is to let the dealer/customer actually use and troubleshoot the device.
+
+However, temporary recovery should restore normal user access, not grant unnecessary administrator privileges.
+
+11. What happens if the device clock is changed?
+
+The application must detect suspicious clock manipulation.
+
+The recovery should not be extendable simply by changing Windows' clock.
+
+The desktop application should maintain trusted local time information and detect backward/invalid clock changes.
+
+When internet becomes available, it should synchronize trusted time/state with the backend.
+
+12. Should periodic internet synchronization be required?
+
+No for the temporary recovery itself.
+
+The whole purpose of this recovery mechanism is that the locked device may be offline.
+
+So:
+
+Recovery starts offline → 36-hour timer works offline → recovery expires offline.
+
+Internet synchronization can happen later for reporting and state synchronization.
+
+3. Dealer Permissions
+13. Can every dealer employee issue temporary recovery?
+
+Yes, the Main Dealer can issue temporary recovery with the devices:recover permission.
+
+14. Which role can permanently release a device?
+
+The Main Dealer, subject to the business rules.
+
+15. Does Main Dealer permanent release require Super Admin approval?
+
+Not for normal approved reasons.
+
+Otherwise the dealer isn't really self-service.
+
+For exceptional cases, Super Admin approval can be required.
+
+For example:
+
+Normal device return → Main Dealer
+Normal completed purchase → Main Dealer
+Exceptional business case → Super Admin
+16. Can Super Admin release devices belonging to any dealer?
+
+Yes.
+
+Super Admin has platform-wide authority.
+
+Every such action must be audited.
+
+17. Permissions
+
+I agree with:
+
+devices:recover
+devices:release
+devices:release:override
+devices:recovery-history:read
+
+I'd also add:
+
+devices:release:revoke
+4. Reasons and Approval
+18. Initial permanent-release reasons
+
+Use specific reasons:
+
+Customer completed purchase
+Device returned
+Device transferred
+Device sold outright
+Contract terminated
+Other
+19. Is "technical/business exception" enough?
+
+No.
+
+Use specific reasons wherever possible.
+
+Have:
+
+Other
+
+for unusual cases.
+
+20. Is a free-text explanation required?
+
+Recommended:
+
+Normal predefined reason → optional notes
+Other → required explanation
+Exceptional/override release → required explanation
+21. Should the reason be immutable?
+
+Yes.
+
+Once submitted, don't edit the original reason.
+
+If someone made a mistake, create a new corrective event.
+
+22. Should some reasons require additional information?
+
+Yes.
+
+For example:
+
+Device transferred
+
+→ transfer reference/recipient.
+
+Device returned
+
+→ return reference.
+
+This can be implemented progressively.
+
+23. Two-person approval?
+
+Not for normal dealer releases.
+
+Yes for exceptional/high-risk releases if the business wants additional protection.
+
+I would make the system capable of supporting this rather than forcing two-person approval on every normal release.
+
+5. Device Identity & Security
+24. Is Device ID enough?
+
+The recovery authorization should at minimum be device-bound to the Project X Device ID.
+
+If the current Device ID is securely generated and stored, use it as the primary identity.
+
+Hardware fingerprint/serial can be added as an additional security layer if the existing desktop architecture supports it reliably.
+
+25. Can the desktop app display a Device ID/challenge?
+
+Yes, the lock screen should provide a recovery identifier/challenge.
+
+This is what allows the dealer to start the recovery process even though the device is offline.
+
+26. Simple signed token or challenge-response?
+
+For our final design:
+
+Challenge-response.
+
+The locked device generates a recovery challenge.
+
+The dealer uses that information in the dealer dashboard.
+
+The backend verifies that the device belongs to that dealer and creates a signed recovery authorization.
+
+The dealer enters the resulting authorization into the locked device.
+
+The device verifies it offline.
+
+27. How do we prevent replay?
+
+Every recovery authorization should have:
+
+Unique authorization ID
+Device ID
+Challenge
+Expiration
+Signature
+
+After successful use, the device records the authorization ID.
+
+The same authorization cannot be used again.
+
+28. Can used authorization IDs be stored locally?
+
+Yes.
+
+The desktop application should securely store the IDs of accepted recovery authorizations.
+
+29. Where does the public verification key go?
+
+The public verification key can be embedded/provisioned in the desktop application.
+
+The private signing key stays on the backend/infrastructure.
+
+Never put the private signing key inside the desktop application.
+
+30. Separate signing key?
+
+Yes.
+
+Use a separate signing key for recovery authorizations rather than reusing the permanent license-signing key.
+
+This creates a security boundary between:
+
+License signing
+
+and
+
+Recovery authorization signing.
+
+6. Online Synchronization
+
+When the device eventually reconnects, it should synchronize events such as:
+
+Recovery issued
+Recovery accepted
+Recovery expired
+Recovery revoked
+Cancellation request created
+Cancellation request synchronized
+Permanent release accepted
+Permanent release revoked
+
+The agents correctly identified that issued and accepted must be separate events, because the device may be offline.
+
+31. What if the server receives a recovery-use event after expiration?
+
+The server should record the historical event, but should not treat it as a currently valid recovery.
+
+For example:
+
+Authorization accepted offline at 10:00
+Authorization expired locally at 12:00
+Device reconnects at 14:00
+
+The server records what happened.
+
+It doesn't pretend the recovery never existed.
+
+32. What if the server revoked an authorization while the device was offline?
+
+If the device already accepted it before the revocation, preserve the historical acceptance.
+
+Then when the device reconnects, it receives the latest server state.
+
+Again:
+
+History should not be rewritten.
+
+33. What if two authorizations conflict?
+
+The device should follow a defined priority:
+
+Permanent valid server-synchronized state > temporary recovery.
+
+For temporary recoveries:
+
+Only one active recovery should be allowed per device.
+
+The backend should prevent conflicting active authorizations.
+
+7. Database Model
+34. Dedicated recovery table?
+
+Yes.
+
+Use a dedicated:
+
+DeviceRecoveryAuthorization
+
+rather than putting recovery data only in AuditLog.
+
+35. Permanent release table?
+
+Yes.
+
+Use a dedicated permanent-release record.
+
+The device can also have a current state/reference for quick lookup.
+
+So conceptually:
+
+Device
+DeviceRecoveryAuthorization
+DevicePermanentRelease
+AuditLog
+36. Permanent-release fields
+
+Yes, fields like:
+
+releasedAt
+releaseType
+releaseReason
+releasedBy
+releaseRevokedAt
+
+are appropriate.
+
+I'd also consider:
+
+releaseId
+deviceId
+dealerId
+notes
+status
+revokedBy
+revocationReason
+37. Temporary recovery statuses
+
+Yes:
+
+ISSUED
+USED
+EXPIRED
+REVOKED
+REJECTED
+
+These describe the lifecycle clearly.
+
+38. Multiple historical recovery records?
+
+Yes.
+
+One device can have many historical recovery records.
+
+Example:
+
+Recovery #1 — August 10
+Recovery #2 — August 17
+Recovery #3 — August 24
+
+But only one should normally be active at a time.
+
+39. Append-only audit records?
+
+Yes.
+
+Never rewrite historical audit events.
+
+If something needs correction:
+
+Create a new event.
+
+8. Dashboard
+40. Where should recovery controls appear?
+
+Primarily:
+
+Device Details
+
+The Devices list can have quick actions, but Device Details should contain the complete workflow.
+
+41. Separate payment and device status?
+
+Absolutely yes.
+
+For example:
+
+Payment: Partially Paid
+Device: Temporarily Recovered
+
+These are different concepts.
+
+42. Remove key/reveal?
+
+Yes.
+
+Remove the permanent license-key reveal from the normal dealer interface.
+
+Replace it with:
+
+Recover Device
+
+The agents' original concern about the key already being exposed to the browser is exactly why this should be removed.
+
+43. Hide permanent release from ordinary dealers?
+
+Yes.
+
+Only users with:
+
+devices:release
+
+should see the permanent release action.
+
+44. Should the dashboard display the authorization?
+
+Yes, but only when necessary to complete the recovery.
+
+Give the dealer a Copy action.
+
+Don't expose it as a permanent credential.
+
+45. Display authorization once?
+
+Yes.
+
+Once generated, display it clearly and allow it to be copied.
+
+Do not make it a reusable secret.
+
+After use, show:
+
+Used
+
+rather than continuing to display the authorization as an active credential.
+
+46. Re-enter password for permanent release?
+
+Yes, I recommend additional confirmation.
+
+At minimum:
+
+Confirmation dialog + explicit confirmation.
+
+For higher-risk releases:
+
+Re-enter password / elevated authentication.
+
+47. Recovery history visibility?
+
+Dealer: Their own devices.
+
+Super Admin: All applicable devices.
+
+9. Desktop Application
+48. Dealer Recovery on lock screen?
+
+Yes.
+
+This is a core part of the solution.
+
+The locked device should have:
+
+Dealer Recovery
+
+The recovery itself is offline.
+
+49. Separate Permanent Release input?
+
+No.
+
+This is one of the biggest changes from the original agent recommendations.
+
+The desktop application should not have a separate "Permanent Release Authorization" input.
+
+Permanent release should be handled through the backend and synchronized to the device.
+
+That prevents the offline recovery mechanism from accidentally becoming a permanent-unlock mechanism.
+
+50. Show recovery expiration?
+
+Yes.
+
+For example:
+
+Temporary Recovery
+Expires in 46 hours 21 minutes
+
+This makes the temporary nature obvious.
+
+51. Return to Lock Mode after expiration?
+
+Yes.
+
+If the underlying device/license state still requires locking, the device automatically returns to Lock Mode.
+
+52. Show "Permanently Released"?
+
+Yes, once the backend has successfully released the device and the device has synchronized that state.
+
+Something like:
+
+Device Permanently Released
+
+53. Continue checking payment after permanent release?
+
+No for normal payment-based locking.
+
+Once permanently released, payment-based device locking should no longer apply.
+
+But the backend can still maintain the customer's financial records separately.
+
+54. Damaged authorization or invalid clock?
+
+The device should fail safely.
+
+If the recovery authorization cannot be verified:
+
+Recovery Failed
+
+It should not assume the authorization is valid.
+
+If the local clock appears manipulated or invalid:
+
+Refuse recovery or require the appropriate online synchronization/recovery process.
+
+10. Cancellation Flow
+
+This is the important clarification we made after the agents created these questions.
+
+Cancellation is NOT part of offline recovery.
+
+The flow is:
+
+Device is locked.
+Dealer enters Dealer Recovery on the lock screen.
+Recovery happens offline.
+Device becomes temporarily usable.
+Customer chooses Cancel Plan.
+Cancellation request is created.
+When internet becomes available, request reaches backend.
+Dealer sees the request in their dashboard.
+Dealer confirms cancellation.
+Backend updates the financing/contract status.
+Device receives the new state when synchronized.
+
+So:
+
+Recovery = offline
+
+Cancellation = backend + dealer confirmation
+
+This is an important separation.
+
+11. Operational Policy
+55. Who approves permanent support exceptions?
+
+For normal dealer release:
+
+Main Dealer.
+
+For exceptional override:
+
+Super Admin.
+
+56. Maximum permanent releases per dealer?
+
+I wouldn't impose an arbitrary hard limit initially.
+
+Instead:
+
+Track all releases.
+Monitor unusual activity.
+Add limits if real-world usage shows abuse.
+57. Repeated recoveries trigger an alert?
+Yes.
+
+If the same device is repeatedly recovered, that should be flagged.
+
+For example:
+
+Device recovered 5 times within 30 days.
+
+That could indicate:
+
+Technical problems
+Incorrect payment configuration
+Dealer misuse
+Customer trying to bypass locking
+58. Super Admin notifications?
+
+Yes for permanent releases and exceptional overrides.
+
+Not necessarily for every ordinary temporary recovery, otherwise notifications could become noisy.
+
+59. Audit-log page in V1?
+
+Yes, at least a basic audit history.
+
+Full export functionality can come later if necessary.
+
+But the underlying audit data should exist from day one.
+
+60. Can support revoke unused recovery authorizations?
+
+Yes.
+
+If an authorization was issued but hasn't been used, an authorized user should be able to revoke it.
+
+Once revoked:
+
+The device must reject it.
+
+61. Is a reason required for revocation?
+
+Yes.
+
+For example:
+
+Recovery issued accidentally.
+
+Wrong device selected.
+
+Dealer requested cancellation.
+
+Again, the original event remains untouched.
+
+Final Architecture We Have Now
+
+The most important thing is that we have three separate processes:
+
+1. Dealer Recovery
+
+Purpose: Fix a locked device.
+
+Started from lock screen
+Offline
+36 hours after acceptance
+Each authorization is single-use; each device may successfully recover twice
+Device-bound
+Signed authorization
+Doesn't change payment
+Doesn't change ownership
+Automatically expires
+2. Plan Cancellation
+
+Purpose: End/change the financing relationship.
+
+Customer requests cancellation
+Backend receives request
+Dealer confirms from dashboard
+Backend changes contract state
+Device synchronizes afterward
+Not controlled by the offline recovery authorization
+3. Permanent Release
+
+Purpose: Permanently remove the device from normal payment-based locking.
+
+Backend-controlled
+Main Dealer or Super Admin
+Requires reason
+Requires confirmation
+Fully audited
+Not part of offline recovery
+Payment status remains separate

@@ -1,0 +1,65 @@
+<Window x:Class="DesktopAppFresh.StartupWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Project X - Welcome"
+        WindowStartupLocation="CenterScreen"
+        Width="1100"
+        Height="680"
+        MinWidth="900"
+        MinHeight="560"
+        ResizeMode="CanResize"
+        Background="White">
+    <Window.Resources>
+        <SolidColorBrush x:Key="NavyBrush" Color="#061538"/>
+        <SolidColorBrush x:Key="BlueBrush" Color="#1765ED"/>
+        <Style x:Key="StartButton" TargetType="Button">
+            <Setter Property="Background" Value="{StaticResource BlueBrush}"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="FontFamily" Value="{StaticResource DisplayFont}"/>
+            <Setter Property="FontSize" Value="15"/>
+            <Setter Property="FontWeight" Value="700"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" CornerRadius="5" Padding="16,12">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="65*"/>
+            <ColumnDefinition Width="35*"/>
+        </Grid.ColumnDefinitions>
+        <Border Grid.Column="0" Background="{StaticResource NavyBrush}" Padding="72,64,80,48">
+            <Grid>
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal">
+                        <Image Source="/Project X.png" Width="36" Height="36" Stretch="Uniform" Margin="0,0,10,0"/>
+                        <TextBlock Text="Project X" FontFamily="{StaticResource DisplayFont}" FontSize="25" FontWeight="700" Foreground="White" VerticalAlignment="Center"/>
+                    </StackPanel>
+                    <StackPanel Margin="0,92,0,0" MaxWidth="430">
+                        <TextBlock Text="Welcome to" FontFamily="{StaticResource DisplayFont}" FontSize="54" FontWeight="700" Foreground="White"/>
+                        <TextBlock Text="Project X" FontFamily="{StaticResource DisplayFont}" FontSize="54" FontWeight="700" Foreground="White" LineHeight="54"/>
+                        <TextBlock Text="Secure. Activate. Work." FontFamily="{StaticResource DisplayFont}" FontSize="22" FontWeight="600" Foreground="White" Margin="0,18,0,0"/>
+                        <TextBlock Text="This app connects your device to your financing account and manages your license securely." FontFamily="{StaticResource DisplayFont}" FontSize="16" Foreground="#DCE7FF" TextWrapping="Wrap" Margin="0,15,0,0"/>
+                        <TextBlock Text="Create your account, activate your device, and track your installment plan from one secure workspace." FontFamily="{StaticResource DisplayFont}" FontSize="15" Foreground="#B9CBED" TextWrapping="Wrap" Margin="0,13,0,0"/>
+                    </StackPanel>
+                </StackPanel>
+                <StackPanel VerticalAlignment="Bottom">
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,14"><Border Width="22" Height="22" BorderBrush="White" BorderThickness="1" CornerRadius="11"><TextBlock Text="✓" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/></Border><TextBlock Text="Verify your account" FontFamily="{StaticResource DisplayFont}" FontSize="15" Foreground="White" Margin="10,0,0,0" VerticalAlignment="Center"/></StackPanel>
+                    <StackPanel Orientation="Horizontal"><Border Width="22" Height="22" BorderBrush="White" BorderThickness="1" CornerRadius="11"><TextBlock Text="A" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/></Border><TextBlock Text="Activate your license" FontFamily="{StaticResource DisplayFont}" FontSize="15" Foreground="White" Margin="10,0,0,0" VerticalAlignment="Center"/></StackPanel>
+                </StackPanel>
+            </Grid>
+        </Border>
+        <Grid Grid.Column="1" Background="White">
+            <Image Source="/510uTHyDqGL._AC_UF1000,1000_QL80_.png" Width="600" MaxHeight="520" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,120,0,0"/>
+            <Button x:Name="GetStartedBtn" Style="{StaticResource StartButton}" Width="145" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,72,52" Content="Get Started  →" Click="GetStartedBtn_Click"/>
+        </Grid>
+    </Grid>
+</Window>

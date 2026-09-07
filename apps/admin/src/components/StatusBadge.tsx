@@ -1,5 +1,6 @@
 interface StatusBadgeProps {
   status: string;
+  className?: string;
 }
 
 const statusClasses: Record<string, string> = {
@@ -13,12 +14,12 @@ const statusClasses: Record<string, string> = {
   archived: 'bg-gray-100 text-gray-700',
 };
 
-export function StatusBadge({ status }: StatusBadgeProps) {
+export function StatusBadge({ status, className = '' }: StatusBadgeProps) {
   const normalized = status?.toLowerCase() ?? 'unknown';
   const classes = statusClasses[normalized] ?? 'bg-gray-100 text-gray-700';
 
   return (
-    <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${classes}`}>
+    <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${classes} ${className}`}>
       {status}
     </span>
   );

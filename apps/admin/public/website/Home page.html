@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>PayGo Dealer | Institutional Management</title>
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;600;700;800&amp;family=Inter:wght@400;600;700&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "error-red": "#ba1a1a",
+                    "secondary": "#006c49",
+                    "tertiary": "#593600",
+                    "on-primary-fixed-variant": "#003ea8",
+                    "surface-container-highest": "#d3e3ff",
+                    "primary": "#003594",
+                    "on-secondary-fixed": "#002113",
+                    "surface-variant": "#d3e3ff",
+                    "success-green": "#006c49",
+                    "warning-amber": "#784b00",
+                    "secondary-container": "#9af2c5",
+                    "on-tertiary-fixed": "#2a1700",
+                    "on-secondary-fixed-variant": "#005236",
+                    "on-secondary": "#ffffff",
+                    "tertiary-fixed": "#ffddb7",
+                    "inverse-primary": "#b4c5ff",
+                    "background": "#f8f9ff",
+                    "on-surface-variant": "#434655",
+                    "outline": "#737685",
+                    "on-surface": "#0b1c30",
+                    "on-tertiary-fixed-variant": "#653e00",
+                    "secondary-fixed": "#9df4c8",
+                    "on-error-container": "#93000a",
+                    "error-container": "#ffdad6",
+                    "surface-container-lowest": "#ffffff",
+                    "outline-variant": "#c3c6d6",
+                    "surface-container": "#e6eeff",
+                    "inverse-surface": "#213146",
+                    "inverse-on-surface": "#ebf1ff",
+                    "tertiary-container": "#784b00",
+                    "surface-dim": "#cbdbf6",
+                    "surface": "#f8f9ff",
+                    "on-primary-container": "#b8c8ff",
+                    "on-tertiary": "#ffffff",
+                    "surface-container-low": "#eff4ff",
+                    "on-tertiary-container": "#fdbe6e",
+                    "primary-fixed": "#dbe1ff",
+                    "tertiary-fixed-dim": "#fabb6b",
+                    "primary-container": "#004ac6",
+                    "primary-fixed-dim": "#b4c5ff",
+                    "secondary-fixed-dim": "#81d8ad",
+                    "surface-tint": "#1b55d0",
+                    "surface-container-high": "#dde9ff",
+                    "on-secondary-container": "#0c714d",
+                    "on-primary": "#ffffff",
+                    "on-primary-fixed": "#00174b",
+                    "on-error": "#ffffff",
+                    "on-background": "#0b1c30",
+                    "surface-bright": "#f8f9ff",
+                    "error": "#ba1a1a"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "stack-gap": "1rem",
+                    "sidebar-width": "260px",
+                    "section-gap": "2rem",
+                    "margin-desktop": "2rem",
+                    "margin-mobile": "1rem",
+                    "gutter": "1.5rem"
+            },
+            "fontFamily": {
+                    "headline-md": ["Hanken Grotesk"],
+                    "stat-lg": ["Hanken Grotesk"],
+                    "label-sm": ["Inter"],
+                    "body-md": ["Inter"],
+                    "label-md": ["Inter"],
+                    "headline-sm": ["Hanken Grotesk"],
+                    "display-lg": ["Hanken Grotesk"],
+                    "body-lg": ["Inter"]
+            },
+            "fontSize": {
+                    "headline-md": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                    "stat-lg": ["28px", {"lineHeight": "34px", "fontWeight": "700"}],
+                    "label-sm": ["10px", {"lineHeight": "14px", "letterSpacing": "0.1em", "fontWeight": "700"}],
+                    "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "label-md": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                    "headline-sm": ["18px", {"lineHeight": "24px", "fontWeight": "600"}],
+                    "display-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .card-shadow {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+        }
+        .glass-nav {
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+        .hero-gradient {
+            background: radial-gradient(circle at 70% 30%, rgba(219, 225, 255, 0.4) 0%, rgba(248, 249, 255, 0) 60%);
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface font-body-md overflow-x-hidden">
+<!-- Top Navigation Bar -->
+<header class="fixed top-0 w-full z-50 backdrop-blur-md bg-surface/80 shadow-sm">
+<nav class="flex justify-between items-center px-8 max-w-7xl mx-auto h-16">
+<div class="flex items-center gap-8">
+<span class="font-headline-md text-headline-md font-bold text-primary">PayGo Dealer</span>
+<div class="hidden md:flex items-center gap-6">
+<a class="text-primary font-semibold border-b-2 border-primary font-body-md text-body-md hover:text-primary transition-colors duration-200" href="#">Solutions</a>
+<a class="text-on-surface-variant font-body-md text-body-md hover:text-primary transition-colors duration-200" href="#">Features</a>
+<a class="text-on-surface-variant font-body-md text-body-md hover:text-primary transition-colors duration-200" href="#">Institutional</a>
+<a class="text-on-surface-variant font-body-md text-body-md hover:text-primary transition-colors duration-200" href="#">Company</a>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="text-on-surface-variant font-body-md text-body-md hover:text-primary transition-colors duration-200 active:scale-95 transition-transform duration-150">Login</button>
+<button class="bg-primary text-on-primary px-6 py-2.5 rounded-xl font-label-md text-label-md active:scale-95 transition-transform duration-150 shadow-sm">Get Started</button>
+</div>
+</nav>
+</header>
+<main class="relative">
+<!-- Hero Section -->
+<section class="pt-32 pb-20 md:pt-48 md:pb-32 px-margin-mobile md:px-margin-desktop hero-gradient">
+<div class="max-w-7xl mx-auto grid md:grid-cols-2 gap-12 items-center">
+<div class="space-y-8">
+<div class="inline-flex items-center gap-2 px-3 py-1 bg-primary-fixed text-on-primary-fixed rounded-full">
+<span class="material-symbols-outlined text-[18px]">verified</span>
+<span class="font-label-md text-label-md">TRUSTED BY 1,000+ DEALERS</span>
+</div>
+<h1 class="font-display-lg text-display-lg md:text-[56px] md:leading-[1.1] text-on-surface">
+                        Empower Your Dealership with <span class="text-primary">PayGo Institutional.</span>
+</h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant max-w-lg">
+                        The all-in-one platform for device management, payment tracking, and real-time dealer analytics. Scale your operations with confidence.
+                    </p>
+<div class="flex flex-wrap gap-4 pt-4">
+<button class="bg-primary text-on-primary px-8 py-4 rounded-xl font-headline-sm text-headline-sm active:scale-95 transition-transform duration-150 shadow-md">
+                            Get Started
+                        </button>
+<button class="bg-surface-container-low text-primary px-8 py-4 rounded-xl font-headline-sm text-headline-sm border border-outline-variant hover:bg-surface-container-high transition-colors active:scale-95 duration-150">
+                            View Demo
+                        </button>
+</div>
+</div>
+<div class="relative">
+<div class="aspect-video bg-surface-container-highest rounded-2xl overflow-hidden card-shadow border border-outline-variant relative group">
+<img class="w-full h-full object-cover" data-alt="A sleek and professional dashboard interface showing financial analytics and device tracking data. The UI is clean, using a light mode palette with primary blue accents. High-quality corporate aesthetic with soft shadows and layered glass components. The mood is sophisticated and reliable, reflecting a high-end institutional financial tool." src="https://lh3.googleusercontent.com/aida-public/AB6AXuASxZvmeuSd4VWunQ-6mpYCCUEoIspB2Lz1ny63iSlDgkXJdaJ-DOsI8yFtwg-oBboXUyToe4ujP1Bz4J2jATDhH3Dp7BexpCwu3CGfAd4K-pGH_XhlrgyAbEl0fBsrvDhoFIr06BtZw8IzDRWheSR0bhFQCEGoLEMmsI7bybRDkcArVgVSc5f7U3gdi54w7tJTVMDuUQ8_cKhNlVPmj3jZ9Ck9HlG8JK9voWyKeWcLL3UG1_SJC0R5gw"/>
+<div class="absolute inset-0 bg-primary/5 group-hover:bg-transparent transition-colors pointer-events-none"></div>
+</div>
+<!-- Decorative Floating Elements -->
+<div class="absolute -bottom-6 -left-6 bg-surface p-4 rounded-xl shadow-lg border border-outline-variant hidden lg:block animate-bounce" style="animation-duration: 4s;">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-success-green/10 flex items-center justify-center text-success-green">
+<span class="material-symbols-outlined">payments</span>
+</div>
+<div>
+<div class="text-[10px] font-bold text-outline uppercase tracking-wider">LATEST PAYOUT</div>
+<div class="font-headline-sm text-headline-sm">$12,450.00</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Social Proof Section -->
+<section class="py-12 bg-surface-container-lowest border-y border-outline-variant">
+<div class="max-w-7xl mx-auto px-margin-desktop text-center">
+<p class="font-label-md text-label-md text-on-surface-variant mb-8 uppercase tracking-widest">Trusted by over 1,000+ dealers worldwide</p>
+<div class="flex flex-wrap justify-center items-center gap-12 opacity-50 grayscale">
+<!-- Brand Placeholders -->
+<div class="flex items-center gap-2 font-headline-sm text-headline-sm font-bold"><span class="material-symbols-outlined">shield</span>SECURECORP</div>
+<div class="flex items-center gap-2 font-headline-sm text-headline-sm font-bold"><span class="material-symbols-outlined">bolt</span>FASTPAY</div>
+<div class="flex items-center gap-2 font-headline-sm text-headline-sm font-bold"><span class="material-symbols-outlined">account_balance</span>GLOBALTRUST</div>
+<div class="flex items-center gap-2 font-headline-sm text-headline-sm font-bold"><span class="material-symbols-outlined">devices</span>DEVICENET</div>
+</div>
+</div>
+</section>
+<!-- Features Section -->
+<section class="py-24 px-margin-mobile md:px-margin-desktop bg-surface">
+<div class="max-w-7xl mx-auto">
+<div class="text-center mb-16">
+<h2 class="font-display-lg text-display-lg text-on-surface mb-4">Why Dealers Choose PayGo</h2>
+<p class="font-body-lg text-body-lg text-on-surface-variant max-w-2xl mx-auto">
+                        We provide the institutional-grade tools you need to manage risk, ensure liquidity, and scale your device financing operations.
+                    </p>
+</div>
+<div class="grid md:grid-cols-3 gap-8">
+<!-- Feature Card 1 -->
+<div class="bg-surface-container-lowest p-8 rounded-2xl card-shadow border border-outline-variant hover:border-primary transition-all duration-300 group">
+<div class="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center text-primary mb-6 group-hover:bg-primary group-hover:text-on-primary transition-colors">
+<span class="material-symbols-outlined">monitoring</span>
+</div>
+<h3 class="font-headline-sm text-headline-sm text-on-surface mb-3">Real-time Monitoring</h3>
+<p class="font-body-md text-body-md text-on-surface-variant">
+                            Track every device in your fleet with millisecond latency. Get instant alerts on payment status and device health.
+                        </p>
+</div>
+<!-- Feature Card 2 -->
+<div class="bg-surface-container-lowest p-8 rounded-2xl card-shadow border border-outline-variant hover:border-primary transition-all duration-300 group">
+<div class="w-12 h-12 bg-secondary/10 rounded-xl flex items-center justify-center text-secondary mb-6 group-hover:bg-secondary group-hover:text-on-secondary transition-colors">
+<span class="material-symbols-outlined">account_balance_wallet</span>
+</div>
+<h3 class="font-headline-sm text-headline-sm text-on-surface mb-3">Automated Payouts</h3>
+<p class="font-body-md text-body-md text-on-surface-variant">
+                            Never wait for your funds. Our automated clearing system ensures you get paid the moment your customers settle their balances.
+                        </p>
+</div>
+<!-- Feature Card 3 -->
+<div class="bg-surface-container-lowest p-8 rounded-2xl card-shadow border border-outline-variant hover:border-primary transition-all duration-300 group">
+<div class="w-12 h-12 bg-tertiary/10 rounded-xl flex items-center justify-center text-tertiary mb-6 group-hover:bg-tertiary group-hover:text-on-tertiary transition-colors">
+<span class="material-symbols-outlined">gpp_good</span>
+</div>
+<h3 class="font-headline-sm text-headline-sm text-on-surface mb-3">Institutional Security</h3>
+<p class="font-body-md text-body-md text-on-surface-variant">
+                            Bank-grade encryption and multi-sig authorization protocols keep your dealership's data and funds safe 24/7.
+                        </p>
+</div>
+</div>
+</div>
+</section>
+<!-- Dynamic Bento Grid Section -->
+<section class="py-24 px-margin-mobile md:px-margin-desktop bg-surface-container-low overflow-hidden">
+<div class="max-w-7xl mx-auto">
+<div class="grid grid-cols-1 md:grid-cols-4 md:grid-rows-2 gap-6 h-auto md:h-[600px]">
+<div class="md:col-span-2 md:row-span-2 bg-primary rounded-3xl p-10 flex flex-col justify-between text-on-primary relative overflow-hidden group">
+<div class="z-10">
+<h3 class="font-display-lg text-display-lg mb-4">Unmatched Dealer Analytics</h3>
+<p class="text-primary-fixed text-body-lg max-w-sm">Deep dive into your portfolio performance with predictive models and custom reporting tools.</p>
+</div>
+<div class="z-10 mt-8">
+<button class="bg-on-primary text-primary px-6 py-3 rounded-xl font-label-md text-label-md active:scale-95 transition-all">Explore Insights</button>
+</div>
+<!-- Abstract BG Shape -->
+<div class="absolute -bottom-20 -right-20 w-64 h-64 bg-primary-container/30 rounded-full blur-3xl group-hover:scale-125 transition-transform duration-700"></div>
+</div>
+<div class="md:col-span-2 bg-surface-container-lowest rounded-3xl p-8 border border-outline-variant flex items-center gap-6 group hover:bg-surface transition-colors">
+<div class="flex-1">
+<h4 class="font-headline-sm text-headline-sm mb-2">Global Connectivity</h4>
+<p class="text-on-surface-variant text-body-md">Manage dealers across 50+ countries with localized currency and compliance support.</p>
+</div>
+<div class="w-20 h-20 flex-shrink-0 bg-surface-variant rounded-2xl flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[40px]">public</span>
+</div>
+</div>
+<div class="md:col-span-1 bg-secondary-container rounded-3xl p-8 flex flex-col justify-center items-center text-center group">
+<span class="material-symbols-outlined text-on-secondary-container text-[48px] mb-4 group-hover:rotate-12 transition-transform">auto_awesome</span>
+<div class="font-stat-lg text-stat-lg text-on-secondary-container">99.9%</div>
+<div class="text-on-secondary-container font-label-md text-label-md uppercase">UPTIME GUARANTEE</div>
+</div>
+<div class="md:col-span-1 bg-surface-container-highest rounded-3xl p-8 border border-outline-variant flex flex-col justify-center items-center text-center">
+<div class="font-stat-lg text-stat-lg text-primary">24/7</div>
+<div class="text-on-surface-variant font-label-md text-label-md uppercase">EXPERT SUPPORT</div>
+</div>
+</div>
+</div>
+</section>
+<!-- CTA Section -->
+<section class="py-24 px-margin-mobile md:px-margin-desktop">
+<div class="max-w-5xl mx-auto bg-on-surface text-inverse-on-surface rounded-[40px] p-12 md:p-20 text-center relative overflow-hidden">
+<div class="relative z-10">
+<h2 class="font-display-lg text-display-lg mb-6">Ready to scale your dealership?</h2>
+<p class="font-body-lg text-body-lg text-outline-variant max-w-xl mx-auto mb-10">
+                        Join the thousand of forward-thinking dealers who are optimizing their cash flow and device management with PayGo.
+                    </p>
+<div class="flex flex-col sm:flex-row gap-4 justify-center">
+<button class="bg-primary text-on-primary px-10 py-5 rounded-2xl font-headline-sm text-headline-sm active:scale-95 transition-transform duration-150 shadow-lg">
+                            Start Free Trial
+                        </button>
+<button class="bg-transparent text-inverse-on-surface border border-outline px-10 py-5 rounded-2xl font-headline-sm text-headline-sm hover:bg-surface/10 active:scale-95 transition-all">
+                            Talk to Sales
+                        </button>
+</div>
+</div>
+<!-- Atmosphere -->
+<div class="absolute inset-0 bg-gradient-to-br from-primary/20 to-transparent pointer-events-none"></div>
+</div>
+</section>
+</main>
+<!-- Footer -->
+<footer class="w-full py-12 bg-surface-container-low border-t border-outline-variant">
+<div class="max-w-7xl mx-auto px-margin-desktop grid grid-cols-2 md:grid-cols-4 gap-stack-gap">
+<div class="col-span-2 md:col-span-1 mb-8">
+<span class="font-headline-sm text-headline-sm font-bold text-on-surface">PayGo Dealer</span>
+<p class="mt-4 text-on-surface-variant font-body-md text-body-md max-w-xs">
+                    Empowering the future of device financing through institutional-grade infrastructure and analytics.
+                </p>
+</div>
+<div class="flex flex-col gap-4">
+<h5 class="text-primary font-bold font-body-md">Product</h5>
+<a class="text-on-surface-variant font-body-md text-body-md hover:text-primary underline transition-all duration-200" href="#">Features</a>
+<a class="text-on-surface-variant font-body-md text-body-md hover:text-primary underline transition-all duration-200" href="#">Institutional</a>
+<a class="text-on-surface-variant font-body-md text-body-md hover:text-primary underline transition-all duration-200" href="#">Security</a>
+</div>
+<div class="flex flex-col gap-4">
+<h5 class="text-primary font-bold font-body-md">Company</h5>
+<a class="text-on-surface-variant font-body-md text-body-md hover:text-primary underline transition-all duration-200" href="#">About Us</a>
+<a class="text-on-surface-variant font-body-md text-body-md hover:text-primary underline transition-all duration-200" href="#">Careers</a>
+<a class="text-on-surface-variant font-body-md text-body-md hover:text-primary underline transition-all duration-200" href="#">Privacy Policy</a>
+</div>
+<div class="flex flex-col gap-4">
+<h5 class="text-primary font-bold font-body-md">Legal</h5>
+<a class="text-on-surface-variant font-body-md text-body-md hover:text-primary underline transition-all duration-200" href="#">Terms of Service</a>
+<a class="text-on-surface-variant font-body-md text-body-md hover:text-primary underline transition-all duration-200" href="#">Cookie Policy</a>
+<a class="text-on-surface-variant font-body-md text-body-md hover:text-primary underline transition-all duration-200" href="#">GDPR</a>
+</div>
+</div>
+<div class="max-w-7xl mx-auto px-margin-desktop mt-12 pt-8 border-t border-outline-variant text-center">
+<p class="text-on-surface-variant font-body-md text-body-md">© 2024 PayGo Institutional. All rights reserved.</p>
+</div>
+</footer>
+<script>
+        // Micro-interaction for scroll effects
+        window.addEventListener('scroll', () => {
+            const header = document.querySelector('header');
+            if (window.scrollY > 20) {
+                header.classList.add('shadow-md');
+                header.classList.remove('shadow-sm');
+            } else {
+                header.classList.add('shadow-sm');
+                header.classList.remove('shadow-md');
+            }
+        });
+
+        // Add observer for entrance animations
+        const observerOptions = {
+            threshold: 0.1
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('opacity-100', 'translate-y-0');
+                    entry.target.classList.remove('opacity-0', 'translate-y-10');
+                }
+            });
+        }, observerOptions);
+
+        document.querySelectorAll('section > div > div').forEach(el => {
+            el.classList.add('transition-all', 'duration-700', 'opacity-0', 'translate-y-10');
+            observer.observe(el);
+        });
+    </script>
+</body></html>

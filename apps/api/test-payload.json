@@ -1,0 +1,17 @@
+{
+  "dealer": {
+    "name": "Test Dealer",
+    "slug": "test-dealer-123",
+    "email": "dealer@test.com",
+    "phone": "+1234567890",
+    "country": "US",
+    "timezone": "UTC"
+  },
+  "owner": {
+    "email": "owner@test.com",
+    "password": "TestPass123!",
+    "firstName": "John",
+    "lastName": "Doe",
+    "phone": "+1234567890"
+  }
+}

@@ -1,0 +1,9 @@
+export { DashboardIcon } from './DashboardIcon';
+export { RouterIcon } from './RouterIcon';
+export { UsersIcon } from './UsersIcon';
+export { PaymentsIcon } from './PaymentsIcon';
+export { SettingsIcon } from './SettingsIcon';
+export { LogoutIcon } from './LogoutIcon';
+export { TrendingUpIcon } from './TrendingUpIcon';
+export { TrendingDownIcon } from './TrendingDownIcon';
+export { ChevronDownIcon } from './ChevronDownIcon';

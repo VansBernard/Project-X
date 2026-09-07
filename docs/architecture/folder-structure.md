@@ -59,17 +59,17 @@ Project X/
       tailwind.config.ts
       .env.example
 
-    desktop/
-      ProjectX.Desktop/
-        Views/
-        ViewModels/
-        Models/
-        Services/
-        Infrastructure/
-        Resources/
+    DesktopApp1/
+      DesktopAppFresh/
         App.xaml
-      ProjectX.Desktop.Tests/
-      ProjectX.Desktop.sln
+        DesktopAppFresh.csproj
+        LoginWindow.xaml
+        RegistrationWindow.xaml
+        DashboardWindow.xaml
+        LockWindow.xaml
+        MainWindow.xaml
+
+    # Note: the current desktop prototype is located in apps/DesktopApp1/DesktopAppFresh. The planned production desktop client structure is apps/desktop/ProjectX.Desktop.
 
   packages/
     contracts/
@@ -118,7 +118,7 @@ Project X/
 
 `apps/web` contains the React tenant portal and all browser-facing user experience.
 
-`apps/desktop` contains the WPF .NET 8 desktop client and desktop tests.
+`apps/desktop` is the planned WPF .NET 8 desktop client location. The canonical current desktop prototype lives in `apps/DesktopApp1/DesktopAppFresh` and should be used for present development.
 
 `packages/contracts` contains shared DTOs, API response types, event schemas, and validation contracts. It must not contain business logic.
 

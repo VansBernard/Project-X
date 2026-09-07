@@ -6,6 +6,24 @@ The backend remains authoritative. The desktop client can cache state, display s
 
 ## Project Layout
 
+Current prototype layout:
+
+```text
+apps/DesktopApp1/
+  DesktopAppFresh/
+    App.xaml
+    DesktopAppFresh.csproj
+    LoginWindow.xaml
+    RegistrationWindow.xaml
+    DashboardWindow.xaml
+    LockWindow.xaml
+    MainWindow.xaml
+```
+
+> Note: this is the real desktop prototype currently present in the repository.
+
+Planned future layout:
+
 ```text
 apps/desktop/
   ProjectX.Desktop/
@@ -13,23 +31,14 @@ apps/desktop/
     ViewModels/
     Models/
     Services/
-      Api/
-      Auth/
-      Device/
-      Sync/
-      Storage/
-      Update/
-      Logging/
     Infrastructure/
-      Configuration/
-      DependencyInjection/
-      Security/
-      Windows/
     Resources/
     App.xaml
   ProjectX.Desktop.Tests/
   ProjectX.Desktop.sln
 ```
+
+> Important: `apps/desktop/ProjectX.Desktop` is a future concept, not a folder currently present in this repository. The canonical desktop prototype today is `apps/DesktopApp1/DesktopAppFresh`.
 
 ## MVVM Responsibilities
 

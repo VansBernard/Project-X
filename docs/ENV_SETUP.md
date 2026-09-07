@@ -52,6 +52,14 @@ PAYSTACK_MAX_RETRY_ATTEMPTS=3
 
 Use test keys for development and live keys only in production.
 
+Production requirements:
+
+- `PAYSTACK_SECRET_KEY` must start with `sk_live_`.
+- `PAYSTACK_PUBLIC_KEY` must start with `pk_live_`.
+- `PAYMENT_PORTAL_BASE_URL` must use the deployed HTTPS host.
+- `WEB_ORIGIN` must contain only deployed frontend origins; localhost is rejected.
+- `DATABASE_URL` must include `sslmode=require`.
+
 ## RSA 4096 License Keys
 
 ```env

@@ -5,6 +5,8 @@ import { validate } from "../../middleware/validate.js";
 import { Permissions, Roles } from "../auth/auth.constants.js";
 import { contractManagementController } from "./contract-management.controller.js";
 import {
+  cancelPlanDecisionSchema,
+  cancelPlanRequestSchema,
   contractParamsSchema,
   createContractSchema,
   listContractsQuerySchema,
@@ -49,6 +51,29 @@ contractManagementRouter.patch(
   validate(contractParamsSchema, "params"),
   validate(updateContractStatusSchema),
   asyncHandler(contractManagementController.updateStatus)
+);
+
+contractManagementRouter.post(
+  "/contracts/cancellation-request",
+  validate(cancelPlanRequestSchema),
+  asyncHandler(contractManagementController.requestCancellation)
+);
+
+contractManagementRouter.get(
+  "/contracts/:contractId/cancellation-request",
+  requireRole(...contractReadRoles),
+  requirePermission(Permissions.ContractsRead),
+  validate(contractParamsSchema, "params"),
+  asyncHandler(contractManagementController.cancellationRequest)
+);
+
+contractManagementRouter.patch(
+  "/contracts/:contractId/cancellation-request",
+  requireRole(...contractManageRoles),
+  requirePermission(Permissions.ContractsStatus),
+  validate(contractParamsSchema, "params"),
+  validate(cancelPlanDecisionSchema),
+  asyncHandler(contractManagementController.decideCancellation)
 );
 
 contractManagementRouter.get(

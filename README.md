@@ -16,12 +16,14 @@ Built backend modules:
 - License engine
 - License delivery
 
-Desktop foundation:
+Desktop prototype:
 
-- WPF .NET 8 MVVM structure
-- Offline license cache
-- RSA signature verification
+- Canonical current desktop prototype: `apps/DesktopApp1/DesktopAppFresh`
+- WPF .NET 8 MVVM structure with login, registration, dashboard, and lock workflows
+- Offline license cache and validation concepts
+- RSA signature verification examples
 - Device ownership and expiration checks
+- Future production desktop structure is planned under `apps/desktop/ProjectX.Desktop` as a conceptual layout only
 
 ## Technology Stack
 
@@ -67,12 +69,15 @@ Project X/
       tsconfig.json
       .env.example
 
-    desktop/
-      ProjectX.Desktop/
-        Infrastructure/
-        Models/
-        Services/
-        ViewModels/
+    DesktopApp1/
+      DesktopAppFresh/
+        App.xaml
+        DesktopAppFresh.csproj
+        LoginWindow.xaml
+        RegistrationWindow.xaml
+        DashboardWindow.xaml
+        LockWindow.xaml
+        MainWindow.xaml
 
   docs/
     architecture/

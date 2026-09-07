@@ -19,7 +19,7 @@ interface StatCardProps {
 export function StatCard({ title, value, change, icon, onClick }: StatCardProps) {
   return (
     <div
-      className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow cursor-pointer"
+      className="bg-white dark:bg-gray-800 rounded-lg p-6 cursor-pointer"
       onClick={onClick}
     >
       <div className="flex items-start justify-between">
@@ -49,7 +49,7 @@ interface ChartContainerProps {
 
 export function ChartContainer({ title, subtitle, children, action }: ChartContainerProps) {
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+    <div className="bg-white dark:bg-gray-800 rounded-lg p-6">
       <div className="flex items-center justify-between mb-6">
         <div>
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{title}</h3>
