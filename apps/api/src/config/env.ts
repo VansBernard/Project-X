@@ -9,6 +9,14 @@ dotenv.config();
 
 const developmentPaymentLinkSecret = "development-payment-link-secret-change-before-production";
 
+if (process.env.NODE_ENV === "production" && process.env.DATABASE_URL) {
+  const databaseUrl = new URL(process.env.DATABASE_URL);
+  if (databaseUrl.searchParams.get("sslmode") !== "require") {
+    databaseUrl.searchParams.set("sslmode", "require");
+    process.env.DATABASE_URL = databaseUrl.toString();
+  }
+}
+
 const envSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
   PORT: z.coerce.number().int().positive().default(4000),
