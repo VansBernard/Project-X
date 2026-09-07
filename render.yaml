@@ -10,7 +10,7 @@ services:
     runtime: node
     plan: free
     rootDir: .
-    buildCommand: npm ci && npm --workspace @project-x/api run prisma:generate && npm --workspace @project-x/api run build
+    buildCommand: npm ci --include=dev && npm --workspace @project-x/api run prisma:generate && npm --workspace @project-x/api run build
     startCommand: npx prisma migrate deploy --schema apps/api/prisma/schema.prisma && npm --workspace @project-x/api run start
     healthCheckPath: /api/v1/health
     envVars:
@@ -61,7 +61,7 @@ services:
     name: project-x-admin
     runtime: static
     rootDir: .
-    buildCommand: npm ci && npm --workspace @project-x/admin run build
+    buildCommand: npm ci --include=dev && npm --workspace @project-x/admin run build
     staticPublishPath: apps/admin/dist
     envVars:
       - key: VITE_API_URL
