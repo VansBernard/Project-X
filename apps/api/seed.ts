@@ -39,6 +39,7 @@ const permissionLabels: Record<string, { name: string; description: string }> = 
   [Permissions.CustomersManage]: { name: "Manage Customers", description: "Update customer profiles" },
   [Permissions.CustomersHistoryRead]: { name: "Read Customer History", description: "Read customer history" },
   [Permissions.DevicesRegister]: { name: "Register Devices", description: "Register customer devices" },
+  [Permissions.DevicesRecover]: { name: "Recover Devices", description: "Recover and authorize device access" },
   [Permissions.ContractsCreate]: { name: "Create Contracts", description: "Create customer contracts" },
   [Permissions.ContractsRead]: { name: "Read Contracts", description: "Read customer contracts" },
   [Permissions.ContractsManage]: { name: "Manage Contracts", description: "Manage customer contracts" },
