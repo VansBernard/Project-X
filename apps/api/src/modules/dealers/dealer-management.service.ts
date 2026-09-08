@@ -344,12 +344,17 @@ export const dealerManagementService = {
       update: { slug: input.dealer.slug, payload: { input, passwordHash } as Prisma.JsonObject, tokenHash: hashLicenseKey(token), expiresAt, confirmedAt: null },
       create: { email: input.owner.email, slug: input.dealer.slug, payload: { input, passwordHash } as Prisma.JsonObject, tokenHash: hashLicenseKey(token), expiresAt }
     });
-    await emailService.sendDealerRegistrationEmail({
-      to: input.owner.email,
-      dealerName: input.dealer.name,
-      dealerSlug: input.dealer.slug,
-      verificationUrl: `${env.WEB_ORIGIN[0]}/verify-email?signupToken=${encodeURIComponent(token)}`
-    });
+    try {
+      await emailService.sendDealerRegistrationEmail({
+        to: input.owner.email,
+        dealerName: input.dealer.name,
+        dealerSlug: input.dealer.slug,
+        verificationUrl: `${env.WEB_ORIGIN[0]}/verify-email?signupToken=${encodeURIComponent(token)}`
+      });
+    } catch (error) {
+      console.error("[DEALER_SIGNUP_EMAIL_FAILED]", error);
+      throw new AppError(503, "SIGNUP_EMAIL_UNAVAILABLE", "We could not send the confirmation email. Please try again shortly or contact support.");
+    }
     return { pending: true, verificationEmailSent: true };
   },
 
