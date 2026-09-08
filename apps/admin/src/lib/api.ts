@@ -1,9 +1,15 @@
 // API Client for Project X Admin Dashboard
 
-const configuredApiUrl = import.meta.env.VITE_API_URL || '/api/v1';
-const API_URL = configuredApiUrl.endsWith('/api/v1')
-  ? configuredApiUrl
-  : `${configuredApiUrl.replace(/\/$/, '')}/api/v1`;
+export function normalizeApiBaseUrl(rawUrl: string): string {
+  const fallbackUrl = 'https://project-x-api-kwty.onrender.com';
+  const sanitized = (rawUrl || fallbackUrl).trim().replace(/\/+$/, '');
+  const baseUrl = sanitized.replace(/\/api\/v1$/i, '').replace(/\/api$/i, '');
+
+  return baseUrl.replace(/^https:\/\/project-x-api(?:-kwty)?\.onrender\.com$/i, fallbackUrl);
+}
+
+const configuredApiUrl = normalizeApiBaseUrl(import.meta.env.VITE_API_URL || 'https://project-x-api-kwty.onrender.com');
+const API_URL = `${configuredApiUrl.replace(/\/$/, '')}/api/v1`;
 const DEALER_SLUG = import.meta.env.VITE_DEALER_SLUG || 'test-dealer';
 
 export interface ApiError {
