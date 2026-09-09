@@ -5,7 +5,7 @@ services:
     plan: free
     rootDir: .
     buildCommand: npm ci --include=dev && npm --workspace @project-x/api run prisma:generate && npm --workspace @project-x/api run build
-    startCommand: npm --workspace @project-x/api run prisma:migrate:deploy && npm --workspace @project-x/api run start
+    startCommand: npm --workspace @project-x/api run start
     healthCheckPath: /api/v1/health
     envVars:
       - key: NODE_ENV
