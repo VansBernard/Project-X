@@ -8,14 +8,10 @@ export function prismaDatabaseUrl() {
     const url = new URL(databaseUrl);
     const hostname = url.hostname.toLowerCase();
     const usesSupabase = hostname.includes("supabase") || hostname.includes("pooler.supabase.com");
-    const usesSupabasePooler = hostname.includes("pooler.supabase.com") || url.port === "6543";
+    const usesSupabasePooler = url.port === "6543";
 
     if (usesSupabase) {
-      if (usesSupabasePooler && (url.port === "" || url.port === "5432")) {
-        url.port = "6543";
-      }
-
-      // Use sslmode=require for Supabase connections; the Supabase pooler expects TLS.
+      // Use TLS for Supabase connections and preserve the configured endpoint.
       url.searchParams.set("sslmode", "require");
 
       if (usesSupabasePooler && !url.searchParams.has("pgbouncer")) {
