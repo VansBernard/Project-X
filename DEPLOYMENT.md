@@ -68,10 +68,10 @@ SMTP_PASS=<your-password>
 
 ### 4. Configure Supabase PostgreSQL
 
-1. In Supabase, open the target project and copy its PostgreSQL connection string.
+1. In Supabase, open the target project and copy its direct PostgreSQL connection string.
 2. Set it as `DATABASE_URL` in the Render API service environment.
 3. Ensure the connection string includes `sslmode=require`.
-4. Use the direct Supabase connection for migrations; use the Supabase pooler connection for a horizontally scaled API.
+4. Use the direct Supabase connection for this service so migrations and the API use the same TLS-enabled database connection.
 
 ### 5. Run Migrations
 
