@@ -43,8 +43,8 @@ Render provides simple deployment with zero-config PostgreSQL.
 - **Environment**: `Node`
 - **Region**: Select closest to users
 - **Branch**: `main`
-- **Build Command**: `npm install && npm run build:api`
-- **Start Command**: `cd apps/api && npm start`
+- **Build Command**: `npm ci --include=dev && npm --workspace @project-x/api run prisma:generate && npm --workspace @project-x/api run build`
+- **Start Command**: `npm --workspace @project-x/api run prisma:migrate:deploy && npm --workspace @project-x/api run start`
 
 ### 3. Set Environment Variables
 
@@ -53,7 +53,7 @@ In Render dashboard → Environment:
 ```env
 NODE_ENV=production
 PORT=4000
-DATABASE_URL=<Render PostgreSQL URL>
+DATABASE_URL=<Supabase PostgreSQL connection string with sslmode=require>
 JWT_ACCESS_SECRET=<your-secret>
 JWT_REFRESH_SECRET=<your-secret>
 PAYSTACK_SECRET_KEY=sk_live_xxxxx
@@ -66,22 +66,19 @@ SMTP_USER=<your-email>
 SMTP_PASS=<your-password>
 ```
 
-### 4. Create PostgreSQL Database
+### 4. Configure Supabase PostgreSQL
 
-1. Click "New +" → "PostgreSQL"
-2. Set name and region (match web service region)
-3. Create database
-4. Copy DATABASE_URL to web service environment
+1. In Supabase, open the target project and copy its PostgreSQL connection string.
+2. Set it as `DATABASE_URL` in the Render API service environment.
+3. Ensure the connection string includes `sslmode=require`.
+4. Use the direct Supabase connection for migrations; use the Supabase pooler connection for a horizontally scaled API.
 
 ### 5. Run Migrations
 
-After first deploy, run migrations:
-
-```bash
-# In Render shell (Tools → Render Shell)
-npx prisma migrate deploy
-npx prisma generate
-```
+The committed `render.yaml` runs `prisma migrate deploy` before the API starts.
+Do not run `seed.ts` in production: it creates the documented development
+administrator (`admin@test.com` / `password123`). Create production users through
+the application onboarding flow instead.
 
 ### 6. Deploy
 
