@@ -41,7 +41,7 @@
   ],
   "license": "UNLICENSED",
   "dependencies": {
-    "prisma": "^5.22.0",
+    "prisma": "^7.10.0",
     "terser": "^5.48.0"
   }
 }
