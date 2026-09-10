@@ -353,7 +353,8 @@ export const dealerManagementService = {
       });
     } catch (error) {
       console.error("[DEALER_SIGNUP_EMAIL_FAILED]", error);
-      throw new AppError(503, "SIGNUP_EMAIL_UNAVAILABLE", "We could not send the confirmation email. Please try again shortly or contact support.");
+      const providerMessage = error instanceof Error ? error.message : "Unknown email provider error";
+      throw new AppError(503, "SIGNUP_EMAIL_UNAVAILABLE", `We could not send the confirmation email: ${providerMessage}`);
     }
     return { pending: true, verificationEmailSent: true };
   },
