@@ -1,3 +1,4 @@
+import nodemailer from "nodemailer";
 import { env } from "../../../config/env.js";
 import {
   licenseEmailHtml,
@@ -31,34 +32,27 @@ type SendPayoutFailureEmailInput = {
   paymentReference: string;
 };
 
-const resendEndpoint = "https://api.resend.com/emails";
+const transporter = nodemailer.createTransport({
+  host: env.SMTP_HOST,
+  port: env.SMTP_PORT,
+  secure: env.SMTP_SECURE,
+  connectionTimeout: 10_000,
+  greetingTimeout: 10_000,
+  socketTimeout: 15_000,
+  auth: {
+    user: env.SMTP_USER,
+    pass: env.SMTP_PASS
+  }
+});
 
 async function sendEmail(input: { to: string; subject: string; text: string; html: string }) {
-  if (!env.RESEND_API_KEY) {
-    throw new Error("RESEND_API_KEY is not configured.");
-  }
-
-  const response = await fetch(resendEndpoint, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${env.RESEND_API_KEY}`,
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      from: env.EMAIL_FROM,
-      to: [input.to],
-      subject: input.subject,
-      text: input.text,
-      html: input.html
-    })
+  return transporter.sendMail({
+    from: env.EMAIL_FROM,
+    to: input.to,
+    subject: input.subject,
+    text: input.text,
+    html: input.html
   });
-
-  if (!response.ok) {
-    const details = await response.text();
-    throw new Error(`Resend email request failed (${response.status}): ${details.slice(0, 500)}`);
-  }
-
-  return response.json();
 }
 
 export const emailService = {
