@@ -50,11 +50,7 @@ const envSchema = z.object({
   LICENSE_KEY_ID: z.string().min(1).default("default"),
   RECOVERY_PRIVATE_KEY_PEM_BASE64: z.string().optional(),
   RECOVERY_KEY_ID: z.string().min(1).default("recovery-2026"),
-  SMTP_HOST: z.string().min(1),
-  SMTP_PORT: z.coerce.number().int().positive().default(587),
-  SMTP_SECURE: z.coerce.boolean().default(false),
-  SMTP_USER: z.string().min(1),
-  SMTP_PASS: z.string().min(1),
+  RESEND_API_KEY: z.string().optional(),
   EMAIL_FROM: z.string().min(1),
   LICENSE_DELIVERY_MAX_ATTEMPTS: z.coerce.number().int().positive().default(5)
 }).superRefine((value, ctx) => {
@@ -67,6 +63,14 @@ const envSchema = z.object({
   }
 
   if (value.NODE_ENV === "production") {
+    if (!value.RESEND_API_KEY) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["RESEND_API_KEY"],
+        message: "RESEND_API_KEY must be configured in production."
+      });
+    }
+
     const hasLocalOrigin = value.WEB_ORIGIN.some((origin) => /localhost|127\.0\.0\.1/.test(new URL(origin).hostname));
     if (hasLocalOrigin) {
       ctx.addIssue({

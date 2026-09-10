@@ -1,4 +1,3 @@
-import nodemailer from "nodemailer";
 import { env } from "../../../config/env.js";
 import {
   licenseEmailHtml,
@@ -32,25 +31,39 @@ type SendPayoutFailureEmailInput = {
   paymentReference: string;
 };
 
-const transporter = nodemailer.createTransport({
-  host: env.SMTP_HOST,
-  port: env.SMTP_PORT,
-  secure: env.SMTP_SECURE,
-  connectionTimeout: 10_000,
-  greetingTimeout: 10_000,
-  socketTimeout: 15_000,
-  auth: {
-    user: env.SMTP_USER,
-    pass: env.SMTP_PASS
-  }
-} as any);
+const resendEndpoint = "https://api.resend.com/emails";
 
-const emailFrom = env.EMAIL_FROM.includes("<>") ? env.SMTP_USER : env.EMAIL_FROM;
+async function sendEmail(input: { to: string; subject: string; text: string; html: string }) {
+  if (!env.RESEND_API_KEY) {
+    throw new Error("RESEND_API_KEY is not configured.");
+  }
+
+  const response = await fetch(resendEndpoint, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${env.RESEND_API_KEY}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      from: env.EMAIL_FROM,
+      to: [input.to],
+      subject: input.subject,
+      text: input.text,
+      html: input.html
+    })
+  });
+
+  if (!response.ok) {
+    const details = await response.text();
+    throw new Error(`Resend email request failed (${response.status}): ${details.slice(0, 500)}`);
+  }
+
+  return response.json();
+}
 
 export const emailService = {
   async sendLicenseEmail(input: SendLicenseEmailInput) {
-    return transporter.sendMail({
-      from: emailFrom,
+    return sendEmail({
       to: input.to,
       subject: licenseEmailSubject(input),
       text: licenseEmailText(input),
@@ -59,8 +72,7 @@ export const emailService = {
   },
 
   async sendDealerRegistrationEmail(input: SendDealerRegistrationEmailInput) {
-    return transporter.sendMail({
-      from: emailFrom,
+    return sendEmail({
       to: input.to,
       subject: `Confirm your ${input.dealerName} dealer account`,
       text: `Your Project X dealer account has been created. Confirm your email before signing in: ${input.verificationUrl}`,
@@ -69,8 +81,7 @@ export const emailService = {
   },
 
   async sendPayoutFailureEmail(input: SendPayoutFailureEmailInput) {
-    return transporter.sendMail({
-      from: emailFrom,
+    return sendEmail({
       to: input.to,
       subject: `Action needed: payout failed for ${input.dealerName}`,
       text: `A ${input.currency} ${input.amount.toFixed(2)} payout for payment ${input.paymentReference} could not be sent. Update the payout details, then retry it from the admin dashboard.`,
