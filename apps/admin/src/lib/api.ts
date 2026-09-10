@@ -613,17 +613,17 @@ class ApiClient {
   }
 
   async confirmDealerSignup(token: string): Promise<{ auth?: { accessToken: string; refreshToken: string; expiresInSeconds: number; sessionId: string } }> {
-    const response = await this.fetch<{ auth?: { accessToken: string; refreshToken: string; expiresInSeconds: number; sessionId: string } }>('/dealers/signup/confirm', {
+    const response = await this.fetch<{ data?: { auth?: { accessToken: string; refreshToken: string; expiresInSeconds: number; sessionId: string } } }>('/dealers/signup/confirm', {
       method: 'POST',
       body: JSON.stringify({ token })
     });
     
     // If auth tokens are returned, store them automatically
-    if (response?.auth) {
-      this.setTokens(response.auth.accessToken, response.auth.refreshToken);
+    if (response?.data?.auth) {
+      this.setTokens(response.data.auth.accessToken, response.data.auth.refreshToken);
     }
     
-    return response;
+    return response.data ?? {};
   }
 
   async resendVerification(dealerSlug: string, email: string): Promise<void> {
