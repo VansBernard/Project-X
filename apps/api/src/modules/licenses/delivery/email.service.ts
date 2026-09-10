@@ -1,4 +1,3 @@
-import nodemailer from "nodemailer";
 import { env } from "../../../config/env.js";
 import {
   licenseEmailHtml,
@@ -32,27 +31,30 @@ type SendPayoutFailureEmailInput = {
   paymentReference: string;
 };
 
-const transporter = nodemailer.createTransport({
-  host: env.SMTP_HOST,
-  port: env.SMTP_PORT,
-  secure: env.SMTP_SECURE,
-  connectionTimeout: 10_000,
-  greetingTimeout: 10_000,
-  socketTimeout: 15_000,
-  auth: {
-    user: env.SMTP_USER,
-    pass: env.SMTP_PASS
-  }
-});
+const brevoEndpoint = "https://api.brevo.com/v3/smtp/email";
 
 async function sendEmail(input: { to: string; subject: string; text: string; html: string }) {
-  return transporter.sendMail({
-    from: env.EMAIL_FROM,
-    to: input.to,
-    subject: input.subject,
-    text: input.text,
-    html: input.html
+  const response = await fetch(brevoEndpoint, {
+    method: "POST",
+    headers: {
+      "api-key": String(env.BREVO_API_KEY),
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      sender: { email: env.EMAIL_FROM.match(/<([^>]+)>/)?.[1] ?? env.EMAIL_FROM },
+      to: [{ email: input.to }],
+      subject: input.subject,
+      textContent: input.text,
+      htmlContent: input.html
+    })
   });
+
+  if (!response.ok) {
+    const details = await response.text();
+    throw new Error(`Brevo email request failed (${response.status}): ${details.slice(0, 500)}`);
+  }
+
+  return response.json();
 }
 
 export const emailService = {

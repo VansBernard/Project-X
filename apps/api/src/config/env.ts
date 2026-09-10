@@ -50,11 +50,7 @@ const envSchema = z.object({
   LICENSE_KEY_ID: z.string().min(1).default("default"),
   RECOVERY_PRIVATE_KEY_PEM_BASE64: z.string().optional(),
   RECOVERY_KEY_ID: z.string().min(1).default("recovery-2026"),
-  SMTP_HOST: z.string().min(1),
-  SMTP_PORT: z.coerce.number().int().positive().default(587),
-  SMTP_SECURE: z.coerce.boolean().default(false),
-  SMTP_USER: z.string().min(1),
-  SMTP_PASS: z.string().min(1),
+  BREVO_API_KEY: z.string().min(1).optional(),
   EMAIL_FROM: z.string().min(1),
   LICENSE_DELIVERY_MAX_ATTEMPTS: z.coerce.number().int().positive().default(5)
 }).superRefine((value, ctx) => {
