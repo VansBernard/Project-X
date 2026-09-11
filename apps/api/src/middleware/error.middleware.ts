@@ -58,6 +58,16 @@ export function errorMiddleware(
     });
   }
 
+  if (isPrismaModelNotFoundError(error)) {
+    console.error("[PRISMA_MODEL_NOT_FOUND_ERROR]", error);
+    return res.status(500).json({
+      error: {
+        code: "DATABASE_MIGRATION_REQUIRED",
+        message: "The database schema is incomplete. Please run the required migration before retrying signup."
+      }
+    });
+  }
+
   console.error("[UNHANDLED_ERROR]", {
     error: error instanceof Error ? { message: error.message, stack: error.stack, name: error.name } : String(error),
     timestamp: new Date().toISOString()
@@ -91,4 +101,11 @@ function isPrismaUniqueConstraintError(error: unknown): boolean {
 
   const candidate = error as { code?: unknown };
   return candidate.code === "P2002";
+}
+
+function isPrismaModelNotFoundError(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false;
+
+  const candidate = error as { code?: unknown };
+  return candidate.code === "P2021";
 }
