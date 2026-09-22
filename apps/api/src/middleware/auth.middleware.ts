@@ -5,6 +5,8 @@ export function authenticate(req: Request, res: Response, next: NextFunction) {
   const publicPaths = [
     "/dealers/signup",
     "/dealers/signup/confirm",
+    "/dealers/signup/otp/request",
+    "/dealers/signup/otp/verify",
     "/dealers/payout-banks",
     "/dealers/payout-account/resolve",
     "/health",

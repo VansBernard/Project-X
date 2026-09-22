@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Sidebar, Header, MainLayout } from '../components/Layout';
 import { apiClient, type NotificationItem } from '../lib/api';
 
 const severityStyles: Record<NotificationItem['severity'], string> = {
-  info: 'bg-sky-100 text-sky-700 ring-sky-200',
-  warning: 'bg-amber-100 text-amber-700 ring-amber-200',
-  critical: 'bg-red-100 text-red-700 ring-red-200',
-  success: 'bg-emerald-100 text-emerald-700 ring-emerald-200',
+  info: 'bg-blue-500 text-blue-600',
+  warning: 'bg-amber-500 text-amber-600',
+  critical: 'bg-red-500 text-red-600',
+  success: 'bg-emerald-500 text-emerald-600',
 };
 
 const categoryLabel: Record<string, string> = {
@@ -29,6 +30,7 @@ function formatDate(value: string) {
 }
 
 export function NotificationsPage() {
+  const navigate = useNavigate();
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -62,58 +64,80 @@ export function NotificationsPage() {
   return (
     <>
       <Sidebar />
-      <Header title="Notifications" subtitle="System activity, alerts, and dealer events." />
-      <MainLayout>
-        <section className="space-y-4">
-          <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-            <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50 px-4 py-3">
-              <div>
-                <h3 className="text-base font-semibold text-slate-900">Latest notifications</h3>
-                <p className="text-xs text-slate-500">Recent activity from the full system</p>
+      <Header title="Notifications" />
+      <MainLayout showBack={false}>
+        <section className="mx-auto max-w-[520px] lg:max-w-none lg:space-y-4">
+          <div className="bg-white lg:overflow-hidden lg:rounded-xl lg:border lg:border-slate-200 lg:shadow-sm">
+            <div className="bg-blue-50/60 px-3 py-3 lg:flex lg:items-center lg:justify-between lg:border-b lg:border-slate-200 lg:bg-slate-50 lg:px-4">
+              <div className="flex items-start gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => navigate(-1)}
+                  className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center text-blue-700 transition hover:text-blue-900 lg:hidden"
+                  aria-label="Go back"
+                  title="Back"
+                >
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 19 8 12l7-7" />
+                  </svg>
+                </button>
+                <div>
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-blue-600 lg:hidden">Activity</p>
+                  <h3 className="mt-0.5 text-[15px] font-semibold leading-5 text-slate-950 lg:mt-0 lg:text-base">Latest notifications</h3>
+                </div>
               </div>
-              <span className="rounded-full bg-primary/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-primary">
-                {list.length} total
-              </span>
+              <p className="mt-1 pl-9 text-[11px] text-blue-500 lg:mt-0 lg:pl-0 lg:text-sm lg:text-slate-500">{list.length} total</p>
             </div>
 
             {loading ? (
-              <div className="space-y-3 px-4 py-4">
+              <div className="space-y-4 px-3 py-4 lg:px-4">
                 {Array.from({ length: 5 }).map((_, index) => (
-                  <div key={index} className="h-20 animate-pulse rounded-xl bg-slate-100" />
+                  <div key={index} className="space-y-2 py-1">
+                    <div className="h-3 w-24 animate-pulse bg-blue-100" />
+                    <div className="h-4 w-4/5 animate-pulse bg-slate-100" />
+                    <div className="h-3 w-full animate-pulse bg-slate-100" />
+                  </div>
                 ))}
               </div>
             ) : list.length === 0 ? (
-              <div className="px-4 py-10 text-center text-sm text-slate-500">No notifications yet.</div>
+              <div className="px-3 py-10 text-center text-[12px] text-slate-500 lg:text-sm">No notifications yet.</div>
             ) : (
-              <div className="divide-y divide-slate-200">
+              <div className="px-3 py-2 lg:divide-y lg:divide-slate-200 lg:px-0 lg:py-0">
                 {list.map((item) => (
-                  <article key={item.id} className="px-4 py-4 sm:px-5">
-                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                  <article key={item.id} className="py-3 lg:px-5 lg:py-4">
+                    <div className="flex items-start gap-2.5 lg:gap-3">
+                      <span className={`mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full ${severityStyles[item.severity].split(' ')[0]}`} />
                       <div className="min-w-0 flex-1">
-                        <div className="mb-2 flex flex-wrap items-center gap-2">
-                          <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] ring-1 ${severityStyles[item.severity]}`}>
+                        <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                          <span className={`text-[10px] font-semibold uppercase tracking-[0.12em] ${severityStyles[item.severity].split(' ')[1]}`}>
                             {item.severity}
                           </span>
-                          <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-600 ring-1 ring-slate-200">
+                          <span className="text-[10px] font-medium text-slate-400">
                             {categoryLabel[item.category] ?? item.category}
                           </span>
                           {item.dealerName && (
-                            <span className="text-[10px] text-slate-500">
-                              {item.dealerName} · {item.dealerSlug}
+                            <span className="truncate text-[10px] text-slate-400">
+                              {item.dealerName} / {item.dealerSlug}
                             </span>
                           )}
                         </div>
-                        <h4 className="text-sm font-semibold text-slate-900 sm:text-base">{item.title}</h4>
-                        <p className="mt-1 text-sm leading-6 text-slate-600">{item.message}</p>
+
+                        <div className="mt-1 flex flex-col gap-1 lg:flex-row lg:items-start lg:justify-between lg:gap-4">
+                          <div className="min-w-0">
+                            <h4 className="text-[13px] font-semibold leading-5 text-slate-950 lg:text-sm">{item.title}</h4>
+                            <p className="mt-0.5 text-[12px] leading-5 text-slate-600 lg:text-sm lg:leading-6">{item.message}</p>
+                          </div>
+                          <time className="shrink-0 text-[10px] text-slate-400 lg:text-[11px] lg:text-slate-500">{formatDate(item.createdAt)}</time>
+                        </div>
+
+                        {(item.customerName || item.source) && (
+                          <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[10px] text-blue-500 lg:text-[11px] lg:text-slate-500">
+                            {item.customerName && <span>Customer: {item.customerName}</span>}
+                            {item.source && <span>Source: {item.source}</span>}
+                          </div>
+                        )}
                       </div>
-                      <time className="shrink-0 text-[11px] text-slate-500">{formatDate(item.createdAt)}</time>
                     </div>
-                    {item.customerName && (
-                      <p className="mt-3 text-[11px] text-slate-500">Related customer: {item.customerName}</p>
-                    )}
-                    {item.source && (
-                      <p className="mt-1 text-[11px] text-slate-500">Source: {item.source}</p>
-                    )}
                   </article>
                 ))}
               </div>

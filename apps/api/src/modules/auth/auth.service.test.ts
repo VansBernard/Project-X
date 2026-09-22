@@ -1,6 +1,12 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { authService } from "./auth.service.js";
+import { generateSignupOtpCode } from "../dealers/dealer-management.service.js";
+
+test("generateSignupOtpCode returns a six-digit numeric code", () => {
+  const code = generateSignupOtpCode();
+  assert.match(code, /^\d{6}$/);
+});
 
 test("login returns a database unavailable error when Prisma cannot reach the database", async () => {
   try {

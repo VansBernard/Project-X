@@ -75,7 +75,7 @@ function AdPreview({ ad, onRemove }: { ad: AdItem; onRemove: () => void }) {
     <div className="bg-white p-3 overflow-hidden sm:p-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
         <div className="flex-shrink-0">
-          <img src={ad.imageUrl} alt={ad.caption} className="h-20 w-20 object-cover" />
+          <img src={ad.imageUrl} alt={ad.caption} className="h-24 w-24 rounded-lg object-cover object-center" />
         </div>
         <div className="flex-1 min-w-0">
           <p className="font-medium text-slate-900">{ad.caption}</p>

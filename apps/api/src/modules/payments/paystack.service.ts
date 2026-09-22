@@ -341,7 +341,7 @@ export const paystackService = {
         contractId: input.contractId,
         provider: PaymentProvider.paystack,
         providerReference: reference,
-        status: PaymentStatus.pending,
+        status: PaymentStatus.failed,
         currency: input.currency,
         amount: input.amount,
         metadata: metadata as Prisma.JsonObject
@@ -461,7 +461,7 @@ export const paystackService = {
           dealerId,
           provider: PaymentProvider.paystack,
           providerReference: input.reference,
-          status: PaymentStatus.pending,
+          status: PaymentStatus.failed,
           deletedAt: null
         },
         include: {
@@ -472,7 +472,7 @@ export const paystackService = {
     ]);
 
     if (!payment) {
-      throw new AppError(404, "PAYMENT_NOT_FOUND", "Pending payment was not found.");
+      throw new AppError(404, "PAYMENT_NOT_FOUND", "Failed payment was not found.");
     }
     if (!dealer) {
       throw new AppError(404, "DEALER_NOT_FOUND", "Dealer was not found.");
@@ -624,13 +624,25 @@ export const paystackService = {
     const providerReference = reference ?? payment.providerReference;
 
     if (payload.event !== "charge.success" || payload.data?.status !== "success") {
-      await prisma.paymentWebhookEvent.update({
-        where: { id: webhookEvent.id },
-        data: {
-          status: PaymentWebhookStatus.ignored,
-          processedAt: new Date()
-        }
-      });
+      await Promise.all([
+        prisma.payment.update({
+          where: { id: payment.id },
+          data: {
+            status: PaymentStatus.failed,
+            metadata: {
+              ...jsonObject(payment.metadata),
+              lastProviderStatus: payload.data?.status ?? payload.event ?? "failed"
+            }
+          }
+        }),
+        prisma.paymentWebhookEvent.update({
+          where: { id: webhookEvent.id },
+          data: {
+            status: PaymentWebhookStatus.ignored,
+            processedAt: new Date()
+          }
+        })
+      ]);
 
       return { processed: false, reason: "ignored_event" };
     }
@@ -651,6 +663,17 @@ export const paystackService = {
 
     const verified = await paystackClient.verify(providerReference);
     if (verified.data.status !== "success") {
+      await prisma.payment.update({
+        where: { id: payment.id },
+        data: {
+          status: PaymentStatus.failed,
+          metadata: {
+            ...jsonObject(payment.metadata),
+            lastProviderStatus: verified.data.status ?? "failed"
+          }
+        }
+      });
+
       await prisma.paymentWebhookEvent.update({
         where: { id: webhookEvent.id },
         data: {

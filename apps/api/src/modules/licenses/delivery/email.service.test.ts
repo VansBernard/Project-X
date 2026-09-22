@@ -6,6 +6,7 @@ const emailServicePath = "./email.service.js";
 test("email service module is available for Brevo API delivery", async () => {
   const module = await import(emailServicePath);
   assert.equal(typeof module.emailService.sendDealerRegistrationEmail, "function");
+  assert.equal(typeof module.emailService.sendCustomerWelcomeEmail, "function");
   assert.equal(typeof module.emailService.sendLicenseEmail, "function");
   assert.equal(typeof module.emailService.sendPayoutFailureEmail, "function");
 });

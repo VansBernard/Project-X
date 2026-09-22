@@ -32,6 +32,16 @@ export const dealerManagementController = {
     return res.status(201).json({ data: result });
   },
 
+  async requestSignupOtp(req: Request<object, object, DealerSignupInput>, res: Response) {
+    const result = await dealerManagementService.requestSignupOtp(req.body);
+    return res.status(200).json({ data: result });
+  },
+
+  async verifySignupOtp(req: Request<object, object, { email: string; otpCode: string }>, res: Response) {
+    const result = await dealerManagementService.verifySignupOtp(req.body);
+    return res.status(201).json({ data: result });
+  },
+
   async confirmSignup(req: Request<object, object, ConfirmDealerSignupInput>, res: Response) {
     const result = await dealerManagementService.confirmSignup(req.body.token);
     return res.status(201).json({ data: result });

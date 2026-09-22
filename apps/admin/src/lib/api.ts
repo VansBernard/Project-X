@@ -109,6 +109,21 @@ export interface DealerSignupResponse {
       email: string;
     };
     verificationEmailSent?: boolean;
+    auth?: {
+      accessToken: string;
+      refreshToken: string;
+      expiresInSeconds: number;
+      sessionId: string;
+    };
+  };
+}
+
+export interface SignupOtpResponse {
+  data: {
+    pending: boolean;
+    verificationMethod: string;
+    otpCode?: string;
+    expiresInMinutes: number;
   };
 }
 
@@ -150,7 +165,7 @@ export interface DashboardTransaction {
   amount: number;
   description: string;
   date: string;
-  status: 'success' | 'pending' | 'failed';
+  status: 'success' | 'failed';
 }
 
 export interface DashboardAdItem {
@@ -243,7 +258,7 @@ export interface PaymentListItem {
   id: string;
   providerReference: string;
   provider: string;
-  status: 'pending' | 'successful' | 'failed' | 'reversed' | 'refunded';
+  status: 'successful' | 'failed' | 'reversed' | 'refunded';
   currency: string;
   amount: number | string;
   paidAt?: string | null;
@@ -534,11 +549,15 @@ class ApiClient {
   private setTokens(accessToken: string, refreshToken: string): void {
     localStorage.setItem('accessToken', accessToken);
     localStorage.setItem('refreshToken', refreshToken);
+    window.dispatchEvent(new CustomEvent('auth:tokens-updated', {
+      detail: { accessToken, refreshToken },
+    }));
   }
 
   private clearTokens(): void {
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
+    window.dispatchEvent(new CustomEvent('auth:tokens-cleared'));
   }
 
   private getRefreshToken(): string | null {
@@ -595,6 +614,26 @@ class ApiClient {
       method: 'POST',
       body: JSON.stringify(input),
     });
+  }
+
+  async requestSignupOtp(input: DealerSignupRequest): Promise<SignupOtpResponse> {
+    return this.fetch<SignupOtpResponse>('/dealers/signup/otp/request', {
+      method: 'POST',
+      body: JSON.stringify(input),
+    });
+  }
+
+  async verifySignupOtp(email: string, otpCode: string): Promise<DealerSignupResponse> {
+    const response = await this.fetch<DealerSignupResponse>('/dealers/signup/otp/verify', {
+      method: 'POST',
+      body: JSON.stringify({ email, otpCode }),
+    });
+
+    if (response?.data?.auth) {
+      this.setTokens(response.data.auth.accessToken, response.data.auth.refreshToken);
+    }
+
+    return response;
   }
 
   async resolvePayoutAccount(input: ResolvePayoutAccountRequest): Promise<{ data: { accountName: string; accountNumber: string } }> {

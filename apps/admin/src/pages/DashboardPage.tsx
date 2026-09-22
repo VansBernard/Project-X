@@ -1,15 +1,12 @@
 import { type FormEvent, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Sidebar, Header, MainLayout } from '../components/Layout';
-import { Badge } from '../components/UI';
 import { PaymentsIcon, RouterIcon, UsersIcon } from '../components/Icons';
 import { DeviceAccessDrawer } from '../components/DeviceAccessDrawer';
 import { Modal } from '../components/Modal';
-import { TableSkeleton } from '../components/TableSkeleton';
 import { Skeleton } from '../components/Skeleton';
-import { apiClient, type CancellationRequest, type ContractListItem, type CustomerListItem, type DashboardStats, type DeviceListItem } from '../lib/api';
+import { apiClient, type CancellationRequest, type ContractListItem, type CustomerListItem, type DashboardStats, type DealerProfile, type DeviceListItem } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
-import noDataImg from '../../No data.jpg';
 
 const currencyFormatter = new Intl.NumberFormat('en-US', {
   style: 'currency',
@@ -22,12 +19,6 @@ const dateFormatter = new Intl.DateTimeFormat('en-US', {
   day: 'numeric',
   year: 'numeric',
 });
-
-const transactionBadge: Record<'success' | 'pending' | 'failed', 'success' | 'pending' | 'error'> = {
-  success: 'success',
-  pending: 'pending',
-  failed: 'error',
-};
 
 function formatAmount(value: number) {
   return currencyFormatter.formatToParts(value);
@@ -51,6 +42,143 @@ export function DashboardPage() {
   const [cancellationContract, setCancellationContract] = useState<ContractListItem | null>(null);
   const [cancellationRequest, setCancellationRequest] = useState<CancellationRequest | null>(null);
   const [cancellationBusy, setCancellationBusy] = useState(false);
+  const [dealerProfile, setDealerProfile] = useState<DealerProfile | null>(null);
+  const [onboardingForm, setOnboardingForm] = useState({ name: '', legalName: '', email: '', phone: '', country: '' });
+  const [payoutForm, setPayoutForm] = useState({ payoutMethod: 'bank' as 'bank' | 'mobile_money', bankCode: '', accountNumber: '', accountHolderName: '', mobileMoneyProvider: '', currency: '' });
+  const [payoutBanks, setPayoutBanks] = useState<Array<{ name: string; code: string }>>([]);
+  const [payoutBanksLoading, setPayoutBanksLoading] = useState(false);
+  const [payoutAccountName, setPayoutAccountName] = useState('');
+  const [onboardingError, setOnboardingError] = useState('');
+  const [onboardingStep, setOnboardingStep] = useState<'profile' | 'location' | 'payout'>('profile');
+  const [onboardingSaving, setOnboardingSaving] = useState(false);
+
+  const payoutCurrencies: Record<string, string> = { GH: 'GHS', KE: 'KES', NG: 'NGN', ZA: 'ZAR' };
+  const mobileMoneyProviders: Record<string, Array<{ value: string; label: string }>> = {
+    GH: [{ value: 'MTN', label: 'MTN MoMo' }, { value: 'ATL', label: 'AirtelTigo Money' }, { value: 'VOD', label: 'Telecel Cash' }],
+    KE: [{ value: 'MPESA', label: 'Safaricom M-Pesa' }, { value: 'ATL', label: 'Airtel Money' }],
+  };
+
+  useEffect(() => {
+    if (localStorage.getItem('dealerOnboardingPending') !== 'true') return;
+
+    let cancelled = false;
+    apiClient.getDealerProfile().then((response) => {
+      if (cancelled) return;
+      setDealerProfile(response.data);
+      setOnboardingForm({
+        name: response.data.name || '',
+        legalName: response.data.legalName || response.data.name || '',
+        email: response.data.email || '',
+        phone: response.data.phone || '',
+        country: response.data.country || '',
+      });
+      setPayoutForm((current) => ({ ...current, currency: payoutCurrencies[response.data.country || ''] || '' }));
+    }).catch(() => {
+      if (!cancelled) setOnboardingError('We could not load your account details. Please refresh and try again.');
+    });
+
+    return () => { cancelled = true; };
+  }, []);
+
+  useEffect(() => {
+    const country = onboardingForm.country as 'NG' | 'GH' | 'KE' | 'ZA';
+    if (!['NG', 'GH', 'KE', 'ZA'].includes(country)) {
+      setPayoutBanks([]);
+      return;
+    }
+
+    let cancelled = false;
+    setPayoutBanksLoading(true);
+    apiClient.listPayoutBanks(country)
+      .then((response) => { if (!cancelled) setPayoutBanks(response.data); })
+      .catch(() => { if (!cancelled) setPayoutBanks([]); })
+      .finally(() => { if (!cancelled) setPayoutBanksLoading(false); });
+
+    return () => { cancelled = true; };
+  }, [onboardingForm.country]);
+
+  const onboardingOpen = localStorage.getItem('dealerOnboardingPending') === 'true' && Boolean(dealerProfile);
+
+  const advanceOnboarding = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setOnboardingError('');
+
+    if (onboardingStep === 'profile') {
+      if (!onboardingForm.name.trim() || !onboardingForm.email.trim() || !onboardingForm.phone.trim()) {
+        setOnboardingError('Complete your business profile before continuing.');
+        return;
+      }
+      setOnboardingStep('location');
+      return;
+    }
+
+    if (onboardingStep === 'location') {
+      if (!onboardingForm.country) {
+        setOnboardingError('Select your operating country before continuing.');
+        return;
+      }
+      setOnboardingStep('payout');
+      return;
+    }
+
+    void saveOnboarding(event);
+  };
+
+  const saveOnboarding = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!onboardingForm.name.trim() || !onboardingForm.email.trim() || !onboardingForm.phone.trim() || !onboardingForm.country) {
+      setOnboardingError('Complete all required fields before continuing.');
+      return;
+    }
+    if (!payoutForm.currency || !payoutForm.accountNumber.trim()) {
+      setOnboardingError('Complete your payout details before continuing.');
+      return;
+    }
+    if (payoutForm.payoutMethod === 'bank' && !payoutForm.bankCode) {
+      setOnboardingError('Select your bank before continuing.');
+      return;
+    }
+    if (payoutForm.payoutMethod === 'mobile_money' && !payoutForm.mobileMoneyProvider) {
+      setOnboardingError('Select your mobile money provider before continuing.');
+      return;
+    }
+
+    setOnboardingSaving(true);
+    setOnboardingError('');
+    try {
+      const profileResponse = await apiClient.updateDealerProfile({
+        name: onboardingForm.name.trim(),
+        legalName: onboardingForm.legalName.trim() || onboardingForm.name.trim(),
+        email: onboardingForm.email.trim().toLowerCase(),
+        phone: onboardingForm.phone.trim(),
+        country: onboardingForm.country,
+      });
+      let accountHolderName = payoutForm.accountHolderName.trim();
+      if (payoutForm.payoutMethod === 'bank' && ['NG', 'GH'].includes(onboardingForm.country)) {
+        const resolved = await apiClient.resolvePayoutAccount({
+          country: onboardingForm.country as 'NG' | 'GH',
+          bankCode: payoutForm.bankCode,
+          accountNumber: payoutForm.accountNumber.trim(),
+        });
+        accountHolderName = resolved.data.accountName;
+        setPayoutAccountName(resolved.data.accountName);
+      }
+      await apiClient.updatePayoutDetails({
+        payoutMethod: payoutForm.payoutMethod,
+        bankCode: payoutForm.payoutMethod === 'bank' ? payoutForm.bankCode : undefined,
+        accountNumber: payoutForm.accountNumber.trim(),
+        accountHolderName: accountHolderName || undefined,
+        mobileMoneyProvider: payoutForm.payoutMethod === 'mobile_money' ? payoutForm.mobileMoneyProvider : undefined,
+        currency: payoutForm.currency,
+      });
+      setDealerProfile((current) => current ? { ...current, ...profileResponse.data } : current);
+      localStorage.removeItem('dealerOnboardingPending');
+    } catch (error) {
+      setOnboardingError((error as { message?: string }).message || 'We could not save your details. Please try again.');
+    } finally {
+      setOnboardingSaving(false);
+    }
+  };
 
   const loadCancellationRequest = async () => {
     try {
@@ -204,6 +332,130 @@ export function DashboardPage() {
           </button>
         </div>
       </Modal>
+      <Modal
+        isOpen={onboardingOpen}
+        title="Complete your workspace setup"
+        onClose={() => undefined}
+        hideCancel
+        size="lg"
+      >
+        <form onSubmit={advanceOnboarding} className="space-y-5">
+          <div className="overflow-hidden rounded-3xl bg-[#f4f8ff]">
+            <div className="bg-primary px-4 py-4 text-white sm:px-5 sm:py-5">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-blue-100">Workspace setup</p>
+              <h3 className="mt-1 text-lg font-semibold leading-tight sm:text-xl">Finish your dealer profile</h3>
+              <p className="mt-2 max-w-xl text-xs leading-5 text-blue-50 sm:text-sm sm:leading-6">Complete one section at a time. We will unlock your dashboard after payout details are saved.</p>
+            </div>
+
+            <ol className="grid grid-cols-3 gap-px bg-blue-100 text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-500">
+              <li>
+                <button type="button" onClick={() => setOnboardingStep('profile')} className={`flex h-full w-full items-center gap-2 bg-white px-3 py-2.5 text-left sm:block sm:py-3 ${onboardingStep === 'profile' ? 'text-blue-700' : 'text-slate-500'}`}>
+                  <span className={`text-[11px] sm:block ${onboardingStep === 'profile' ? 'text-blue-500' : 'text-slate-400'}`}>01</span>
+                  Profile
+                </button>
+              </li>
+              <li>
+                <button type="button" onClick={() => { if (onboardingForm.name.trim() && onboardingForm.email.trim() && onboardingForm.phone.trim()) setOnboardingStep('location'); }} className={`flex h-full w-full items-center gap-2 bg-white px-3 py-2.5 text-left sm:block sm:py-3 ${onboardingStep === 'location' ? 'text-blue-700' : 'text-slate-500'}`}>
+                  <span className={`text-[11px] sm:block ${onboardingStep === 'location' ? 'text-blue-500' : 'text-slate-400'}`}>02</span>
+                  Location
+                </button>
+              </li>
+              <li>
+                <button type="button" onClick={() => { if (onboardingForm.country) setOnboardingStep('payout'); }} className={`flex h-full w-full items-center gap-2 bg-white px-3 py-2.5 text-left sm:block sm:py-3 ${onboardingStep === 'payout' ? 'text-blue-700' : 'text-slate-500'}`}>
+                  <span className={`text-[11px] sm:block ${onboardingStep === 'payout' ? 'text-blue-500' : 'text-slate-400'}`}>03</span>
+                  Payout
+                </button>
+              </li>
+            </ol>
+          </div>
+
+          {onboardingError && <div className="rounded-2xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">{onboardingError}</div>}
+
+          {onboardingStep === 'profile' && (
+            <section className="space-y-3">
+              <div className="flex items-start gap-3">
+                <span className="mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-50 text-[11px] font-bold text-blue-700">1</span>
+                <div>
+                  <h3 className="text-sm font-semibold text-slate-950">Business profile</h3>
+                  <p className="mt-0.5 text-xs leading-5 text-slate-500">This is how your dealer workspace appears across receipts, customers, and payment records.</p>
+                </div>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <label className="text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">Business name<input value={onboardingForm.name} onChange={(event) => setOnboardingForm((current) => ({ ...current, name: event.target.value }))} className="mt-1.5 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-normal normal-case tracking-normal text-slate-900 outline-none focus:border-primary-500 focus:ring-4 focus:ring-blue-100" required /></label>
+                <label className="text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">Legal name<input value={onboardingForm.legalName} onChange={(event) => setOnboardingForm((current) => ({ ...current, legalName: event.target.value }))} className="mt-1.5 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-normal normal-case tracking-normal text-slate-900 outline-none focus:border-primary-500 focus:ring-4 focus:ring-blue-100" /></label>
+                <label className="text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">Email address<input type="email" value={onboardingForm.email} onChange={(event) => setOnboardingForm((current) => ({ ...current, email: event.target.value }))} className="mt-1.5 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-normal normal-case tracking-normal text-slate-900 outline-none focus:border-primary-500 focus:ring-4 focus:ring-blue-100" required /></label>
+                <label className="text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">Phone number<input value={onboardingForm.phone} onChange={(event) => setOnboardingForm((current) => ({ ...current, phone: event.target.value }))} className="mt-1.5 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-normal normal-case tracking-normal text-slate-900 outline-none focus:border-primary-500 focus:ring-4 focus:ring-blue-100" required /></label>
+              </div>
+            </section>
+          )}
+
+          {onboardingStep === 'location' && (
+            <section className="space-y-3 rounded-2xl bg-slate-50 px-3 py-4 sm:rounded-3xl sm:px-4">
+              <div className="flex items-start gap-3">
+                <span className="mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white text-[11px] font-bold text-blue-700">2</span>
+                <div>
+                  <h3 className="text-sm font-semibold text-slate-950">Operating country</h3>
+                  <p className="mt-0.5 text-xs leading-5 text-slate-500">Your country controls the available payout options and settlement currency.</p>
+                </div>
+              </div>
+              <label className="block text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">Country<select value={onboardingForm.country} onChange={(event) => { const country = event.target.value; setOnboardingForm((current) => ({ ...current, country })); setPayoutForm((current) => ({ ...current, currency: payoutCurrencies[country] || '', bankCode: '', mobileMoneyProvider: '', accountNumber: '', accountHolderName: '' })); setPayoutAccountName(''); }} className="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-normal normal-case tracking-normal text-slate-900 outline-none focus:border-primary-500 focus:ring-4 focus:ring-blue-100" required><option value="">Select country</option><option value="GH">Ghana</option><option value="NG">Nigeria</option><option value="KE">Kenya</option><option value="ZA">South Africa</option></select></label>
+            </section>
+          )}
+
+          {onboardingStep === 'payout' && (
+            <section className="space-y-3">
+              <div className="flex items-start gap-3">
+                <span className="mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-50 text-[11px] font-bold text-blue-700">3</span>
+                <div>
+                  <h3 className="text-sm font-semibold text-slate-950">Payout destination</h3>
+                  <p className="mt-0.5 text-xs leading-5 text-slate-500">Choose where successful customer payments should be settled.</p>
+                </div>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <fieldset className="sm:col-span-2">
+                  <legend className="text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">Payout method</legend>
+                  <div className="mt-1.5 grid gap-2 sm:grid-cols-2">
+                    {[
+                      { value: 'bank' as const, label: 'Bank account', description: 'Settle payments into a bank account.' },
+                      { value: 'mobile_money' as const, label: 'Mobile money', description: 'Settle payments into a mobile wallet.', disabled: !mobileMoneyProviders[onboardingForm.country] },
+                    ].map((method) => (
+                      <label key={method.value} className={`flex cursor-pointer items-start gap-3 rounded-xl border px-3 py-3 transition ${payoutForm.payoutMethod === method.value ? 'border-primary-500 bg-blue-50 ring-2 ring-blue-100' : 'border-slate-200 bg-white hover:border-slate-300'} ${method.disabled ? 'cursor-not-allowed opacity-50' : ''}`}>
+                        <input
+                          type="radio"
+                          name="payoutMethod"
+                          value={method.value}
+                          checked={payoutForm.payoutMethod === method.value}
+                          disabled={method.disabled}
+                          onChange={() => { setPayoutForm((current) => ({ ...current, payoutMethod: method.value, bankCode: '', mobileMoneyProvider: '', accountNumber: '', accountHolderName: '' })); setPayoutAccountName(''); }}
+                          className="mt-0.5 h-4 w-4 accent-primary-600"
+                        />
+                        <span>
+                          <span className="block text-sm font-semibold normal-case tracking-normal text-slate-900">{method.label}</span>
+                          <span className="mt-0.5 block text-xs font-normal normal-case tracking-normal text-slate-500">{method.description}</span>
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                </fieldset>
+                <label className="text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">Settlement currency<input value={payoutForm.currency} readOnly className="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-normal normal-case tracking-normal text-slate-600" /></label>
+                {payoutForm.payoutMethod === 'bank' ? <>
+                  <label className="text-xs font-semibold uppercase tracking-[0.08em] text-slate-500 sm:col-span-2">Bank<select value={payoutForm.bankCode} disabled={payoutBanksLoading} onChange={(event) => { setPayoutForm((current) => ({ ...current, bankCode: event.target.value, accountHolderName: '' })); setPayoutAccountName(''); }} className="mt-1.5 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-normal normal-case tracking-normal text-slate-900 outline-none focus:border-primary-500 focus:ring-4 focus:ring-blue-100"><option value="">{payoutBanksLoading ? 'Loading supported banks...' : 'Select your bank'}</option>{payoutBanks.map((bank) => <option key={bank.code} value={bank.code}>{bank.name}</option>)}</select></label>
+                  <label className="text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">Bank account number<input value={payoutForm.accountNumber} onChange={(event) => { setPayoutForm((current) => ({ ...current, accountNumber: event.target.value, accountHolderName: '' })); setPayoutAccountName(''); }} className="mt-1.5 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-normal normal-case tracking-normal text-slate-900 outline-none focus:border-primary-500 focus:ring-4 focus:ring-blue-100" required /></label>
+                  {['NG', 'GH'].includes(onboardingForm.country) ? <label className="text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">Verified account name<input value={payoutAccountName} readOnly placeholder="Verified when you save" className="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-normal normal-case tracking-normal text-slate-600" /></label> : <label className="text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">Account holder name<input value={payoutForm.accountHolderName} onChange={(event) => setPayoutForm((current) => ({ ...current, accountHolderName: event.target.value }))} className="mt-1.5 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-normal normal-case tracking-normal text-slate-900 outline-none focus:border-primary-500 focus:ring-4 focus:ring-blue-100" required /></label>}
+                </> : <>
+                  <label className="text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">Mobile money provider<select value={payoutForm.mobileMoneyProvider} onChange={(event) => setPayoutForm((current) => ({ ...current, mobileMoneyProvider: event.target.value }))} className="mt-1.5 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-normal normal-case tracking-normal text-slate-900 outline-none focus:border-primary-500 focus:ring-4 focus:ring-blue-100" required><option value="">Select provider</option>{(mobileMoneyProviders[onboardingForm.country] || []).map((provider) => <option key={provider.value} value={provider.value}>{provider.label}</option>)}</select></label>
+                  <label className="text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">Mobile money number<input value={payoutForm.accountNumber} onChange={(event) => setPayoutForm((current) => ({ ...current, accountNumber: event.target.value }))} className="mt-1.5 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-normal normal-case tracking-normal text-slate-900 outline-none focus:border-primary-500 focus:ring-4 focus:ring-blue-100" required /></label>
+                </>}
+              </div>
+            </section>
+          )}
+
+          <div className="sticky bottom-0 z-20 -mx-4 flex items-center justify-between gap-4 border-t border-slate-100 bg-white px-4 py-3 shadow-[0_-8px_20px_rgba(15,23,42,0.04)] sm:-mx-6 sm:px-6">
+            {onboardingStep !== 'profile' ? <button type="button" onClick={() => setOnboardingStep(onboardingStep === 'payout' ? 'location' : 'profile')} className="shrink-0 text-sm font-semibold text-slate-600 hover:text-slate-900">Back</button> : <p className="min-w-0 text-xs leading-5 text-slate-500">You can update these details later from settings.</p>}
+            <button type="submit" disabled={onboardingSaving} className="flex h-11 shrink-0 items-center justify-center rounded-xl bg-primary px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-container disabled:cursor-not-allowed disabled:opacity-60">{onboardingSaving ? 'Saving...' : onboardingStep === 'payout' ? 'Save and continue' : 'Next'}</button>
+          </div>
+        </form>
+      </Modal>
       <Sidebar />
       <Header title="Today" />
       <MainLayout showBack={false}>
@@ -283,22 +535,59 @@ export function DashboardPage() {
                     </div>
                   )}
                 </div>
+
+                <div className="hidden w-full overflow-hidden rounded-3xl bg-slate-950 p-5 text-white shadow-sm lg:block lg:max-w-[calc(100%-0.25rem)]">
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <p className="text-[11px] font-bold uppercase tracking-[0.35em] text-amber-300">Device access</p>
+                      <h2 className="mt-3 text-2xl font-semibold">Recovery console</h2>
+                    </div>
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-amber-300 text-slate-950">
+                      <RouterIcon size={20} />
+                    </div>
+                  </div>
+                  <p className="mt-4 max-w-sm text-sm leading-6 text-slate-300">Enter a Recovery ID to generate a signed offline authorization.</p>
+
+                  <form onSubmit={handleDesktopRecovery} className="mt-8 border-t border-white/10 pt-5">
+                    <label htmlFor="desktop-recovery-id" className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-300">Recovery ID</label>
+                    <div className="mt-3 flex gap-2">
+                      <input
+                        id="desktop-recovery-id"
+                        value={desktopRecoveryId}
+                        onChange={(event) => setDesktopRecoveryId(event.target.value.toUpperCase())}
+                        placeholder="eg. PX-8F4A2C91D0B7"
+                        className="min-w-0 flex-1 rounded-xl border border-white/15 bg-white/10 px-3 py-3 text-sm text-white outline-none placeholder:text-slate-500 focus:border-amber-300 focus:ring-2 focus:ring-amber-300/30"
+                      />
+                      <button type="submit" disabled={desktopRecoveryLoading} className="rounded-xl bg-amber-300 px-4 py-3 text-sm font-bold text-slate-950 transition hover:bg-amber-200 disabled:cursor-not-allowed disabled:opacity-60">
+                        {desktopRecoveryLoading ? 'Working...' : 'Generate'}
+                      </button>
+                    </div>
+                    {desktopRecoveryError && <p className="mt-3 rounded-xl bg-red-400/10 px-3 py-2 text-sm text-red-200">{desktopRecoveryError}</p>}
+                    {desktopRecoveryCode && (
+                      <div className="mt-4 rounded-xl bg-amber-300/10 p-3">
+                        <p className="text-xs font-bold uppercase tracking-[0.2em] text-amber-300">Authorization</p>
+                        <p className="mt-2 break-all rounded-lg bg-black/30 p-3 font-mono text-xs leading-5 text-amber-50">{desktopRecoveryCode}</p>
+                        <p className="mt-2 text-xs text-slate-300">Valid until {desktopRecoveryExpiresAt ? new Date(desktopRecoveryExpiresAt).toLocaleString() : 'the expiration time'}.</p>
+                      </div>
+                    )}
+                  </form>
+                </div>
               </div>
-              <div className="hidden lg:col-span-2 lg:block">
-                <div className="bg-surface-container-lowest rounded-3xl border border-[#EDF2F7] shadow-sm overflow-hidden h-full">
+              <div className="hidden lg:col-span-2 lg:block lg:mt-[45px]">
+                <div className="bg-surface-container-lowest overflow-hidden rounded-3xl border border-[#EDF2F7] shadow-sm">
                   {selectedAd ? (
-                    <div className="relative h-full min-h-[260px]">
+                    <div className="relative aspect-[4/3] w-full overflow-hidden rounded-2xl">
                       <img
                         src={selectedAd.imageUrl}
                         alt={selectedAd.caption}
-                        className="h-full w-full object-cover"
+                        className="h-full w-full object-cover object-center"
                       />
-                      <div className="absolute left-0 bottom-0 w-full bg-slate-900/60 px-4 py-3">
+                      <div className="absolute inset-x-0 bottom-0 bg-slate-900/60 px-4 py-3">
                         <p className="text-sm text-white">{selectedAd.caption}</p>
                       </div>
                     </div>
                   ) : (
-                    <div className="flex h-full items-center justify-center p-6 text-sm text-slate-500">
+                    <div className="flex h-[260px] items-center justify-center p-6 text-sm text-slate-500">
                       No active ad configured.
                     </div>
                   )}
@@ -355,99 +644,41 @@ export function DashboardPage() {
           {((mobileTab === 'payments' && filteredPayments.length === 0) || (mobileTab === 'devices' && filteredDevices.length === 0) || (mobileTab === 'customers' && filteredCustomers.length === 0)) && <p className="px-3 py-6 text-center text-xs text-slate-500">No {normalizedSearch ? 'matching results' : mobileTab === 'payments' ? 'successful payments' : mobileTab} found.</p>}
         </section>
 
-        <section className="hidden grid-cols-1 gap-gutter lg:grid lg:grid-cols-2 lg:gap-6">
-          <div className="overflow-hidden bg-white lg:rounded-3xl lg:border lg:border-slate-200 lg:shadow-sm">
-            <div className="flex items-center justify-between border-b border-outline-variant bg-slate-50/70 p-3 sm:p-5">
+        <section className="hidden lg:block">
+          <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+            <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50 px-5 py-4">
               <div>
-                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">Overview</p>
-                <h3 className="mt-1 text-base font-semibold text-slate-900 sm:text-lg">Recent Payments</h3>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">Overview</p>
+                <h3 className="mt-1 text-lg font-semibold text-slate-900">Recent Payments</h3>
               </div>
             </div>
             <div className="overflow-x-auto">
-              <div className="max-h-[480px] overflow-y-auto">
-                <table className="w-full text-left table-auto border-collapse">
-                  <thead className="bg-[#F7FAFC] text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    <tr>
-                      <th className="px-4 py-2">Description</th>
-                      <th className="px-4 py-2">Amount</th>
-                      <th className="px-4 py-2">Date</th>
-                      <th className="px-4 py-2">Status</th>
+              <table className="w-full text-left table-auto border-collapse">
+                <thead className="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  <tr>
+                    <th className="px-4 py-3">Description</th>
+                    <th className="px-4 py-3">Amount</th>
+                    <th className="px-4 py-3">Date</th>
+                    <th className="px-4 py-3">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="text-sm text-slate-700">
+                  {recentTransactions.slice(0, 5).map((transaction) => (
+                    <tr key={transaction.id} className="border-t border-slate-200 hover:bg-slate-50">
+                      <td className="px-4 py-3 font-medium text-slate-900">{transaction.description}</td>
+                      <td className="px-4 py-3">{currencyFormatter.format(transaction.amount)}</td>
+                      <td className="px-4 py-3">{dateFormatter.format(new Date(transaction.date))}</td>
+                      <td className="px-4 py-3">
+                        <span className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide ${transaction.status === 'success' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
+                          {transaction.status}
+                        </span>
+                      </td>
                     </tr>
-                  </thead>
-                  {dashboardLoading ? (
-                    <TableSkeleton columnCount={4} rowCount={5} />
-                  ) : statsError ? (
-                    <tbody className="text-xs leading-snug sm:text-sm">
-                      <tr>
-                        <td className="px-4 py-8 text-center" colSpan={4}>
-                          <p className="text-sm text-error">Unable to load recent payments. Please refresh and try again.</p>
-                        </td>
-                      </tr>
-                    </tbody>
-                  ) : recentTransactions.length === 0 ? (
-                    <tbody className="text-xs leading-snug sm:text-sm">
-                      <tr>
-                        <td className="px-4 py-8 text-center" colSpan={4}>
-                          <div className="flex flex-col items-center gap-4">
-                            <img src={noDataImg} alt="No payments" className="max-w-[280px] opacity-95" />
-                            <p className="text-sm text-slate-500">No payments yet. They will appear here when received.</p>
-                          </div>
-                        </td>
-                      </tr>
-                    </tbody>
-                  ) : (
-                    <tbody className="text-xs leading-snug sm:text-sm">
-                      {recentTransactions.map((transaction) => (
-                        <tr key={transaction.id} className="hover:bg-surface-container-low transition-colors">
-                          <td className="px-4 py-2 font-semibold">{transaction.description}</td>
-                          <td className="px-4 py-2">{currencyFormatter.format(transaction.amount)}</td>
-                          <td className="px-4 py-2">{dateFormatter.format(new Date(transaction.date))}</td>
-                          <td className="px-4 py-2"><Badge variant={transactionBadge[transaction.status]}>{transaction.status}</Badge></td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  )}
-                </table>
-              </div>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
-          <section className="h-fit self-start overflow-hidden rounded-3xl bg-slate-950 p-6 text-white shadow-sm">
-            <div>
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <p className="text-[11px] font-bold uppercase tracking-[0.35em] text-amber-300">Device access</p>
-                  <h2 className="mt-3 text-2xl font-semibold">Recovery console</h2>
-                </div>
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-amber-300 text-slate-950">
-                  <RouterIcon size={20} />
-                </div>
-              </div>
-              <p className="mt-4 max-w-sm text-sm leading-6 text-slate-300">Enter a Recovery ID to generate a signed offline authorization.</p>
-            </div>
-            <form onSubmit={handleDesktopRecovery} className="mt-8 border-t border-white/10 pt-5">
-              <label htmlFor="desktop-recovery-id" className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-300">Recovery ID</label>
-              <div className="mt-3 flex gap-2">
-                <input
-                  id="desktop-recovery-id"
-                  value={desktopRecoveryId}
-                  onChange={(event) => setDesktopRecoveryId(event.target.value.toUpperCase())}
-                  placeholder="PX-8F4A2C91D0B7"
-                  className="min-w-0 flex-1 rounded-xl border border-white/15 bg-white/10 px-3 py-3 text-sm text-white outline-none placeholder:text-slate-500 focus:border-amber-300 focus:ring-2 focus:ring-amber-300/30"
-                />
-                <button type="submit" disabled={desktopRecoveryLoading} className="rounded-xl bg-amber-300 px-4 py-3 text-sm font-bold text-slate-950 transition hover:bg-amber-200 disabled:cursor-not-allowed disabled:opacity-60">
-                  {desktopRecoveryLoading ? 'Working...' : 'Generate'}
-                </button>
-              </div>
-              {desktopRecoveryError && <p className="mt-3 rounded-xl bg-red-400/10 px-3 py-2 text-sm text-red-200">{desktopRecoveryError}</p>}
-              {desktopRecoveryCode && (
-                <div className="mt-4 rounded-xl bg-amber-300/10 p-3">
-                  <p className="text-xs font-bold uppercase tracking-[0.2em] text-amber-300">Authorization</p>
-                  <p className="mt-2 break-all rounded-lg bg-black/30 p-3 font-mono text-xs leading-5 text-amber-50">{desktopRecoveryCode}</p>
-                  <p className="mt-2 text-xs text-slate-300">Valid until {desktopRecoveryExpiresAt ? new Date(desktopRecoveryExpiresAt).toLocaleString() : 'the expiration time'}.</p>
-                </div>
-              )}
-            </form>
-          </section>
         </section>
       </MainLayout>
       <button

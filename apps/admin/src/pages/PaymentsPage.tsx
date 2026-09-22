@@ -23,7 +23,6 @@ function formattedAmount(payment: PaymentListItem) {
 
 function statusBadge(status: PaymentListItem['status']) {
   if (status === 'successful') return <Badge variant="success">SUCCESS</Badge>;
-  if (status === 'pending') return <Badge variant="pending">PENDING</Badge>;
   return <Badge variant="error">{status.toUpperCase()}</Badge>;
 }
 

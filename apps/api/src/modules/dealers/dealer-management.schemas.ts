@@ -28,6 +28,13 @@ export const confirmDealerSignupSchema = z.object({
   token: z.string().min(20)
 });
 
+export const requestDealerSignupOtpSchema = dealerSignupSchema;
+
+export const verifyDealerSignupOtpSchema = z.object({
+  email: z.string().email().transform((value) => value.toLowerCase()),
+  otpCode: z.string().trim().regex(/^\d{6}$/)
+});
+
 export const resolvePayoutAccountSchema = z.object({
   country: z.enum(["NG", "GH"]),
   bankCode: z.string().min(2).max(30),

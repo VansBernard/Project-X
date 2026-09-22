@@ -28,24 +28,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Check if user is already logged in on mount
-  useEffect(() => {
-    const checkAuth = async () => {
-      if (apiClient.isAuthenticated()) {
-        try {
-          await refreshUserData();
-        } catch {
-          // User not authenticated, clear any stored tokens
-          await apiClient.logout();
-          setUser(null);
-        }
-      }
-      setLoading(false);
-    };
-
-    checkAuth();
-  }, []);
-
   const refreshUserData = useCallback(async () => {
     try {
       const response = await apiClient.getMe();
@@ -56,6 +38,44 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       throw apiError;
     }
   }, []);
+
+  const syncAuthState = useCallback(async () => {
+    if (apiClient.isAuthenticated()) {
+      try {
+        await refreshUserData();
+      } catch {
+        await apiClient.logout();
+        setUser(null);
+      }
+      return;
+    }
+
+    setUser(null);
+  }, [refreshUserData]);
+
+  // Check if user is already logged in on mount
+  useEffect(() => {
+    const checkAuth = async () => {
+      await syncAuthState();
+      setLoading(false);
+    };
+
+    checkAuth();
+
+    const handleAuthStateChange = () => {
+      void syncAuthState();
+    };
+
+    window.addEventListener('auth:tokens-updated', handleAuthStateChange);
+    window.addEventListener('storage', handleAuthStateChange);
+    window.addEventListener('auth:tokens-cleared', handleAuthStateChange);
+
+    return () => {
+      window.removeEventListener('auth:tokens-updated', handleAuthStateChange);
+      window.removeEventListener('storage', handleAuthStateChange);
+      window.removeEventListener('auth:tokens-cleared', handleAuthStateChange);
+    };
+  }, [syncAuthState]);
 
   const login = useCallback(async (email: string, password: string, dealerSlug: string) => {
     setLoading(true);

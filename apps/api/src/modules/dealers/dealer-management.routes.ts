@@ -17,11 +17,13 @@ import {
   listQuerySchema,
   payoutBanksQuerySchema,
   registerDeviceSchema,
+  requestDealerSignupOtpSchema,
   resolvePayoutAccountSchema,
   suspendDealerSchema,
   updatePayoutDetailsSchema,
   updateDealerProfileSchema,
-  updateCustomerSchema
+  updateCustomerSchema,
+  verifyDealerSignupOtpSchema
 } from "./dealer-management.schemas.js";
 
 export const dealerManagementRouter = Router();
@@ -35,6 +37,20 @@ dealerManagementRouter.post(
   signupAttemptLimit,
   validate(dealerSignupSchema),
   asyncHandler(dealerManagementController.signup)
+);
+
+dealerManagementRouter.post(
+  "/dealers/signup/otp/request",
+  signupAttemptLimit,
+  validate(requestDealerSignupOtpSchema),
+  asyncHandler(dealerManagementController.requestSignupOtp)
+);
+
+dealerManagementRouter.post(
+  "/dealers/signup/otp/verify",
+  signupAttemptLimit,
+  validate(verifyDealerSignupOtpSchema),
+  asyncHandler(dealerManagementController.verifySignupOtp)
 );
 
 dealerManagementRouter.post(

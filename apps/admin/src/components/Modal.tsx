@@ -14,6 +14,7 @@ interface ModalProps {
   cancelText?: string;
   isDangerous?: boolean;
   size?: 'sm' | 'md' | 'lg' | 'xl';
+  hideCancel?: boolean;
 }
 
 const sizeMap = {
@@ -33,15 +34,16 @@ export function Modal({
   cancelText = 'Cancel',
   isDangerous = false,
   size = 'md',
+  hideCancel = false,
 }: ModalProps) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className={`bg-white dark:bg-gray-800 rounded-lg shadow-xl ${sizeMap[size]}`}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-3 sm:p-0">
+      <div className={`no-scrollbar flex max-h-[calc(100dvh-1.5rem)] flex-col overflow-hidden bg-white shadow-xl dark:bg-gray-800 sm:rounded-lg ${sizeMap[size]}`}>
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white">{title}</h2>
+        <div className="flex items-center justify-between border-b border-gray-200 p-4 dark:border-gray-700 sm:p-6">
+          <h2 className="text-lg font-bold text-gray-900 dark:text-white sm:text-xl">{title}</h2>
           <button
             type="button"
             onClick={onClose}
@@ -52,22 +54,22 @@ export function Modal({
         </div>
 
         {/* Content */}
-        <div className="p-6">{children}</div>
+        <div className="min-h-0 overflow-y-auto p-4 sm:p-6">{children}</div>
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-200 dark:border-gray-700">
-          <Button variant="secondary" onClick={onClose}>
-            {cancelText}
-          </Button>
-          {onConfirm && (
-            <Button
-              variant={isDangerous ? 'danger' : 'primary'}
-              onClick={onConfirm}
-            >
-              {confirmText}
-            </Button>
-          )}
-        </div>
+        {(!hideCancel || onConfirm) && (
+          <div className="flex items-center justify-end gap-3 border-t border-gray-200 p-4 dark:border-gray-700 sm:p-6">
+            {!hideCancel && <Button variant="secondary" onClick={onClose}>{cancelText}</Button>}
+            {onConfirm && (
+              <Button
+                variant={isDangerous ? 'danger' : 'primary'}
+                onClick={onConfirm}
+              >
+                {confirmText}
+              </Button>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

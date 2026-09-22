@@ -39,6 +39,10 @@ function hashLicenseKey(key: string) {
   return crypto.createHash("sha256").update(key).digest("hex");
 }
 
+export function generateSignupOtpCode() {
+  return crypto.randomInt(100000, 1000000).toString().padStart(6, "0");
+}
+
 function metadataObject(value: unknown): Prisma.JsonObject {
   return value && typeof value === "object" && !Array.isArray(value)
     ? value as Prisma.JsonObject
@@ -132,6 +136,7 @@ const permissionLabels: Record<string, { name: string; description: string }> = 
   [Permissions.CustomersManage]: { name: "Manage Customers", description: "Update customer profiles" },
   [Permissions.CustomersHistoryRead]: { name: "Read Customer History", description: "Read customer history" },
   [Permissions.DevicesRegister]: { name: "Register Devices", description: "Register customer devices" },
+  [Permissions.DevicesRecover]: { name: "Recover Devices", description: "Authorize device recovery" },
   [Permissions.ContractsCreate]: { name: "Create Contracts", description: "Create customer contracts" },
   [Permissions.ContractsRead]: { name: "Read Contracts", description: "Read customer contracts" },
   [Permissions.ContractsManage]: { name: "Manage Contracts", description: "Manage customer contracts" },
@@ -206,6 +211,9 @@ async function provisionDealerAccess(tx: TransactionClient, dealerId: string) {
     }
 
     const label = permissionLabels[key];
+    if (!label) {
+      throw new AppError(500, "PERMISSION_CONFIGURATION_ERROR", `Permission ${key} is not configured.`);
+    }
     const permission = await tx.permission.upsert({
       where: {
         dealerId_key: {
@@ -359,6 +367,119 @@ export const dealerManagementService = {
     return { pending: true, verificationEmailSent: true };
   },
 
+  async requestSignupOtp(input: DealerSignupInput) {
+    const existingDealer = await prisma.dealer.findFirst({
+      where: { OR: [{ slug: input.dealer.slug }, { email: input.owner.email }], deletedAt: null }
+    });
+    if (existingDealer) throw new AppError(409, "DEALER_ALREADY_EXISTS", "A dealer with this workspace or email already exists.");
+
+    const otpCode = generateSignupOtpCode();
+    const otpHash = hashLicenseKey(otpCode);
+    const passwordHash = await hashPassword(input.owner.password);
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+    const token = crypto.randomBytes(32).toString("base64url");
+    const otpExpiresAtIso = expiresAt.toISOString();
+
+    await prisma.pendingDealerSignup.upsert({
+      where: { email: input.owner.email },
+      update: {
+        slug: input.dealer.slug,
+        payload: { input, passwordHash, otpHash, otpExpiresAt: otpExpiresAtIso } as unknown as Prisma.JsonObject,
+        tokenHash: hashLicenseKey(token),
+        expiresAt,
+        confirmedAt: null
+      },
+      create: {
+        email: input.owner.email,
+        slug: input.dealer.slug,
+        payload: { input, passwordHash, otpHash, otpExpiresAt: otpExpiresAtIso } as unknown as Prisma.JsonObject,
+        tokenHash: hashLicenseKey(token),
+        expiresAt
+      }
+    });
+
+    try {
+      await emailService.sendSignupOtpEmail({
+        to: input.owner.email,
+        dealerName: input.dealer.name,
+        otpCode,
+        expiresInMinutes: 10
+      });
+    } catch (error) {
+      console.error("[SIGNUP_OTP_EMAIL_FAILED]", error);
+      await prisma.pendingDealerSignup.deleteMany({ where: { email: input.owner.email } });
+      const providerMessage = error instanceof Error ? error.message : "Unknown email provider error";
+      throw new AppError(503, "SIGNUP_OTP_EMAIL_UNAVAILABLE", `We could not send the verification code: ${providerMessage}`);
+    }
+
+    return {
+      pending: true,
+      verificationMethod: "otp",
+      expiresInMinutes: 10
+    };
+  },
+
+  async verifySignupOtp(input: { email: string; otpCode: string }) {
+    const email = input.email.trim().toLowerCase();
+    const pending = await prisma.pendingDealerSignup.findFirst({
+      where: {
+        email,
+        expiresAt: { gt: new Date() }
+      }
+    });
+
+    if (!pending) {
+      throw new AppError(400, "INVALID_SIGNUP_OTP", "This verification code is invalid or has expired.");
+    }
+
+    const payload = pending.payload as { input?: DealerSignupInput; passwordHash?: string; otpHash?: string; otpExpiresAt?: string };
+    if (!payload.input || !payload.passwordHash || !payload.otpHash || !payload.otpExpiresAt) {
+      throw new AppError(400, "INVALID_SIGNUP_OTP", "This verification code is invalid or has expired.");
+    }
+
+    const otpExpiresAt = new Date(payload.otpExpiresAt);
+    if (Number.isNaN(otpExpiresAt.getTime()) || otpExpiresAt <= new Date()) {
+      throw new AppError(400, "INVALID_SIGNUP_OTP", "This verification code is invalid or has expired.");
+    }
+
+    if (hashLicenseKey(input.otpCode.trim()) !== payload.otpHash) {
+      throw new AppError(400, "INVALID_SIGNUP_OTP", "This verification code is invalid or has expired.");
+    }
+
+    const result = await this.createConfirmedSignup(payload.input, payload.passwordHash, true);
+    await prisma.pendingDealerSignup.delete({ where: { id: pending.id } });
+
+    try {
+      const userWithRole = await prisma.user.findFirst({
+        where: {
+          id: result.owner.id,
+          dealerId: result.dealer.id
+        },
+        include: {
+          role: {
+            include: {
+              permissions: {
+                include: { permission: true }
+              }
+            }
+          }
+        }
+      });
+
+      if (userWithRole && userWithRole.role) {
+        const tokens = await issueTokensForUser(userWithRole as any);
+        return {
+          ...result,
+          auth: tokens
+        };
+      }
+    } catch (error) {
+      console.error("[TOKEN_GENERATION_FAILED]", { userId: result.owner.id, error });
+    }
+
+    return result;
+  },
+
   async confirmSignup(token: string) {
     const pending = await prisma.pendingDealerSignup.findFirst({
       where: { tokenHash: hashLicenseKey(token), confirmedAt: null, expiresAt: { gt: new Date() } }
@@ -375,7 +496,15 @@ export const dealerManagementService = {
           id: result.owner.id,
           dealerId: result.dealer.id
         },
-        include: { role: true }
+        include: {
+          role: {
+            include: {
+              permissions: {
+                include: { permission: true }
+              }
+            }
+          }
+        }
       });
       
       if (userWithRole && userWithRole.role) {
@@ -843,11 +972,14 @@ export const dealerManagementService = {
   },
 
   async registerDevice(dealerId: string, input: RegisterDeviceInput) {
-    await ensureActiveDealer(dealerId);
+    const dealer = await ensureActiveDealer(dealerId);
+
+    let customer: { id: string; email: string | null; firstName: string | null; lastName: string | null } | null = null;
 
     if (input.customerId) {
-      const customer = await prisma.customer.findFirst({
-        where: { id: input.customerId, dealerId, deletedAt: null }
+      customer = await prisma.customer.findFirst({
+        where: { id: input.customerId, dealerId, deletedAt: null },
+        select: { id: true, email: true, firstName: true, lastName: true }
       });
 
       if (!customer) {
@@ -875,6 +1007,24 @@ export const dealerManagementService = {
         maxWait: 10_000,
         timeout: 60_000
       });
+
+      if (customer && customer.email) {
+        try {
+          await emailService.sendCustomerWelcomeEmail({
+            to: customer.email,
+            customerName: [customer.firstName, customer.lastName].filter(Boolean).join(" ") || "Customer",
+            dealerName: dealer.name,
+            deviceModel: input.model || `${input.manufacturer ?? "Project X"} device`
+          });
+        } catch (error) {
+          console.warn("[DEVICE_WELCOME_EMAIL_FAILED]", {
+            dealerId,
+            customerId: customer.id,
+            email: customer.email,
+            error: error instanceof Error ? error.message : String(error)
+          });
+        }
+      }
 
       return device;
     } catch (error) {
@@ -962,8 +1112,10 @@ export const dealerManagementService = {
     });
     const now = new Date();
 
+    const dealer = await ensureActiveDealer(dealerId);
+
     try {
-      return await prisma.$transaction(async (tx) => {
+      const registration = await prisma.$transaction(async (tx) => {
         const customer = await tx.customer.create({
           data: { ...input.customer, dealerId, metadata: input.customer.metadata as Prisma.JsonObject }
         });
@@ -976,6 +1128,7 @@ export const dealerManagementService = {
             metadata: input.device.metadata as Prisma.JsonObject
           }
         });
+
         const contract = await tx.contract.create({
           data: {
             dealerId, customerId: customer.id, deviceId: device.id,
@@ -1027,6 +1180,26 @@ export const dealerManagementService = {
         maxWait: 10_000,
         timeout: 120_000
       });
+
+      if (registration.customer.email) {
+        try {
+          await emailService.sendCustomerWelcomeEmail({
+            to: registration.customer.email,
+            customerName: [registration.customer.firstName, registration.customer.lastName].filter(Boolean).join(" ") || "Customer",
+            dealerName: dealer.name,
+            deviceModel: input.device.model || `${input.device.manufacturer ?? "Project X"} device`
+          });
+        } catch (error) {
+          console.warn("[DEVICE_REGISTRATION_WELCOME_EMAIL_FAILED]", {
+            dealerId,
+            customerId: registration.customer.id,
+            email: registration.customer.email,
+            error: error instanceof Error ? error.message : String(error)
+          });
+        }
+      }
+
+      return registration;
     } catch (error) {
       console.error("[DEVICE_REGISTRATION_ERROR]", {
         dealerId,

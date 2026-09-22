@@ -50,8 +50,17 @@ const envSchema = z.object({
   LICENSE_KEY_ID: z.string().min(1).default("default"),
   RECOVERY_PRIVATE_KEY_PEM_BASE64: z.string().optional(),
   RECOVERY_KEY_ID: z.string().min(1).default("recovery-2026"),
-  BREVO_API_KEY: z.string().min(1).optional(),
-  EMAIL_FROM: z.string().min(1),
+  BREVO_API_KEY: z.string().trim().min(1).optional(),
+  SMTP_HOST: z.string().trim().optional(),
+  SMTP_PORT: z.coerce.number().int().positive().optional().default(587),
+  SMTP_SECURE: z
+    .union([z.boolean(), z.string().trim().toLowerCase()])
+    .transform((value) => value === true || value === "true")
+    .optional()
+    .default(false),
+  SMTP_USER: z.string().trim().optional(),
+  SMTP_PASS: z.string().trim().optional(),
+  EMAIL_FROM: z.string().trim().min(1),
   LICENSE_DELIVERY_MAX_ATTEMPTS: z.coerce.number().int().positive().default(5)
 }).superRefine((value, ctx) => {
   if (value.NODE_ENV === "production" && value.PAYMENT_LINK_SECRET === developmentPaymentLinkSecret) {
@@ -102,6 +111,15 @@ const envSchema = z.object({
       code: z.ZodIssueCode.custom,
       path: ["LICENSE_PUBLIC_KEY_PEM"],
       message: "Either LICENSE_PUBLIC_KEY_PEM or LICENSE_PUBLIC_KEY_PEM_BASE64 must be provided."
+    });
+  }
+
+  const hasSmtp = Boolean(value.SMTP_HOST && value.SMTP_USER && value.SMTP_PASS);
+  if (value.NODE_ENV !== "test" && !hasSmtp && !value.BREVO_API_KEY) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["SMTP_HOST"],
+      message: "Configure SMTP_HOST, SMTP_USER, and SMTP_PASS, or provide BREVO_API_KEY for email delivery."
     });
   }
 });

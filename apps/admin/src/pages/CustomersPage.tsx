@@ -56,7 +56,7 @@ export function CustomersPage() {
       <MainLayout>
         <div className="space-y-6">
           <section className="overflow-hidden bg-surface-container-lowest lg:rounded-xl lg:border lg:border-[#EDF2F7] lg:card-shadow">
-            <div className="flex items-center justify-between border-b border-outline-variant bg-surface-container-low/50 p-3 sm:p-6">
+            <div className="flex items-center justify-between bg-surface-container-low/50 p-3 sm:p-6 lg:border-b lg:border-outline-variant">
               <div>
                 <p className="text-sm font-semibold text-slate-900 sm:text-base">Customer list</p>
                 <p className="text-xs text-slate-500 sm:text-sm">Showing {customers.length} customer{customers.length === 1 ? '' : 's'}.</p>
@@ -66,7 +66,7 @@ export function CustomersPage() {
 
             <div className="bg-white lg:hidden">
               {loading ? <ListSkeleton /> : error ? <p className="px-3 py-8 text-center text-xs text-slate-500">Unable to load customers.</p> : currentCustomers.length === 0 ? <p className="px-3 py-8 text-center text-xs text-slate-500">No customers found.</p> : currentCustomers.map((customer) => (
-                <Link to={`/customers/${customer.id}`} key={customer.id} className="flex min-h-16 w-full items-center gap-2 border-b border-slate-100 px-3 py-3 text-left transition-colors hover:bg-slate-50 active:bg-slate-100"><div className="min-w-0 flex-1"><p className="truncate text-xs font-semibold text-slate-900">{customer.fullName ?? `${customer.firstName} ${customer.lastName}`}</p><p className="truncate text-[10px] text-slate-500">{customer.email || customer.phone || 'No contact details'}</p></div><div className="text-right"><p className="text-[10px] capitalize text-slate-500">{customer.status}</p><p className="text-[10px] text-slate-400">{customer.contractCount ?? 0} contracts</p></div></Link>
+                <Link to={`/customers/${customer.id}`} key={customer.id} className="flex min-h-16 w-full items-center gap-2 px-3 py-3 text-left transition-colors hover:bg-slate-50 active:bg-slate-100"><div className="min-w-0 flex-1"><p className="truncate text-xs font-semibold text-slate-900">{customer.fullName ?? `${customer.firstName} ${customer.lastName}`}</p><p className="truncate text-[10px] text-slate-500">{customer.email || customer.phone || 'No contact details'}</p></div><div className="text-right"><p className="text-[10px] capitalize text-slate-500">{customer.status}</p><p className="text-[10px] text-slate-400">{customer.contractCount ?? 0} contracts</p></div></Link>
               ))}
             </div>
             <div className="hidden overflow-x-auto bg-white lg:block">
@@ -133,12 +133,12 @@ export function CustomersPage() {
               </table>
             </div>
 
-            <div className="flex items-center justify-center border-t border-outline-variant bg-surface-container-low/50 p-3 sm:p-4 text-sm text-slate-600">
+            <div className="flex items-center justify-center bg-surface-container-low/50 p-3 text-[11px] text-slate-600 sm:p-4 sm:text-sm lg:border-t lg:border-outline-variant">
               <div>Showing {currentCustomers.length} of {customers.length} customers</div>
               <div className="ml-auto flex items-center gap-2">
-                <button type="button" onClick={() => setPage((prev) => Math.max(prev - 1, 1))} disabled={page === 1} className="rounded-lg border border-slate-300 bg-white px-3 py-1 text-slate-700 disabled:cursor-not-allowed disabled:opacity-40">Previous</button>
+                <button type="button" onClick={() => setPage((prev) => Math.max(prev - 1, 1))} disabled={page === 1} className="px-2 py-1 text-[11px] text-slate-600 disabled:cursor-not-allowed disabled:opacity-40 sm:rounded-lg sm:border sm:border-slate-300 sm:bg-white sm:px-3 sm:text-sm sm:text-slate-700">Previous</button>
                 <span className="px-2">Page {page} of {pageCount}</span>
-                <button type="button" onClick={() => setPage((prev) => Math.min(prev + 1, pageCount))} disabled={page === pageCount} className="rounded-lg border border-slate-300 bg-white px-3 py-1 text-slate-700 disabled:cursor-not-allowed disabled:opacity-40">Next</button>
+                <button type="button" onClick={() => setPage((prev) => Math.min(prev + 1, pageCount))} disabled={page === pageCount} className="px-2 py-1 text-[11px] text-slate-600 disabled:cursor-not-allowed disabled:opacity-40 sm:rounded-lg sm:border sm:border-slate-300 sm:bg-white sm:px-3 sm:text-sm sm:text-slate-700">Next</button>
               </div>
             </div>
           </section>

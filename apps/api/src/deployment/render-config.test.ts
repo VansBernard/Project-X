@@ -8,7 +8,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 test("Render deploy resolves failed Prisma migrations before API startup", () => {
-  const renderYamlPath = path.resolve(__dirname, "../../../render.yaml");
+  const renderYamlPath = path.resolve(__dirname, "../../../../render.yaml");
   const renderYaml = fs.readFileSync(renderYamlPath, "utf8");
 
   assert.match(renderYaml, /cd apps\/api/i, "Render config should execute from the API workspace where the Prisma schema exists");
