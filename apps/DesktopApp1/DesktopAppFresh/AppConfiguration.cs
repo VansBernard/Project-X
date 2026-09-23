@@ -15,7 +15,7 @@ namespace DesktopAppFresh
         private static readonly Dictionary<string, string> _cache = new();
 
         // API Configuration
-        public static string ApiBaseUrl => GetConfigValue("ApiConfiguration/BaseUrl", "https://project-x-api.onrender.com/api/v1");
+        public static string ApiBaseUrl => GetConfigValue("ApiConfiguration/BaseUrl", "https://project-x-api-kwty.onrender.com/api/v1");
         public static int ApiTimeoutSeconds => GetConfigInt("ApiConfiguration/TimeoutSeconds", 30);
         public static int ApiRetryAttempts => GetConfigInt("ApiConfiguration/RetryAttempts", 3);
 
@@ -191,7 +191,7 @@ namespace DesktopAppFresh
                 var defaultConfig = new XDocument(
                     new XElement("configuration",
                         new XElement("ApiConfiguration",
-                            new XElement("BaseUrl", "https://project-x-api.onrender.com/api/v1"),
+                            new XElement("BaseUrl", "https://project-x-api-kwty.onrender.com/api/v1"),
                             new XElement("TimeoutSeconds", "30"),
                             new XElement("RetryAttempts", "3")
                         ),

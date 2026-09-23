@@ -13,7 +13,7 @@ namespace DesktopAppFresh
 {
     public static class AuthService
     {
-        private static readonly string DefaultApiBaseUrl = "https://project-x-api.onrender.com/api/v1";
+        private static readonly string DefaultApiBaseUrl = "https://project-x-api-kwty.onrender.com/api/v1";
         private static readonly HttpClient HttpClient = new HttpClient();
         private static readonly string TokenFilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "ProjectX", "auth.json");
         private static readonly byte[] Entropy = Encoding.UTF8.GetBytes("ProjectXAuthTokenEntropy2026");
