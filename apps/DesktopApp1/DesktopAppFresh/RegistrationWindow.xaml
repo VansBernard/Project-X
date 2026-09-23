@@ -117,7 +117,11 @@
             </Grid>
         </Border>
 
-        <Grid Grid.Row="1" Margin="0,14,0,16">
+        <ScrollViewer Grid.Row="1"
+                      VerticalScrollBarVisibility="Auto"
+                      HorizontalScrollBarVisibility="Disabled"
+                      CanContentScroll="True">
+            <Grid Margin="0,14,0,16">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
@@ -346,7 +350,8 @@
                            Foreground="{StaticResource MutedBrush}"
                            TextWrapping="Wrap"/>
             </StackPanel>
-        </Grid>
+            </Grid>
+        </ScrollViewer>
 
         <StackPanel Visibility="Collapsed">
             <TextBox x:Name="DealerIdTextBox"/>
