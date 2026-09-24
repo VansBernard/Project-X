@@ -319,9 +319,6 @@ export const paystackService = {
       throw new AppError(404, "CONTRACT_NOT_FOUND", "Contract was not found.");
     }
     if (!dealer) throw new AppError(404, "DEALER_NOT_FOUND", "Dealer was not found.");
-    if (!dealer.paystackSubaccountCode && !dealer.paystackTransferRecipientCode) {
-      throw new AppError(409, "DEALER_PAYOUT_NOT_CONFIGURED", "The dealer must configure a bank account or mobile money payout method before accepting payments.");
-    }
 
     const reference = generateReference(dealerId);
     const metadata = {
