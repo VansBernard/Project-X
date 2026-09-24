@@ -105,7 +105,7 @@ export class DashboardService {
       amount: typeof p.amount === "string" ? parseFloat(p.amount) : p.amount,
       description: `Payment from ${p.customer?.firstName || ""} ${p.customer?.lastName || ""}`.trim(),
       date: p.createdAt.toISOString(),
-      status: (p.status === "successful" ? "success" : "failed") as "success" | "failed",
+      status: (p.status === "successful" ? "success" : p.status === "pending" ? "pending" : "failed") as "success" | "pending" | "failed",
     }));
 
     const adsConfig = await this.getAdsConfig();

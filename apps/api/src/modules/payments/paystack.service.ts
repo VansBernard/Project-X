@@ -341,7 +341,7 @@ export const paystackService = {
         contractId: input.contractId,
         provider: PaymentProvider.paystack,
         providerReference: reference,
-        status: PaymentStatus.failed,
+        status: PaymentStatus.pending,
         currency: input.currency,
         amount: input.amount,
         metadata: metadata as Prisma.JsonObject
