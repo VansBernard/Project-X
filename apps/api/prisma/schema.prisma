@@ -66,6 +66,7 @@ enum ContractInstallmentStatus {
 }
 
 enum PaymentStatus {
+  pending
   successful
   failed
   reversed
@@ -559,7 +560,7 @@ model Payment {
   provider            PaymentProvider @default(paystack)
   providerReference   String          @map("provider_reference")
   providerTransaction String?         @map("provider_transaction")
-  status              PaymentStatus   @default(failed)
+  status              PaymentStatus   @default(pending)
   currency            String          @default("NGN") @db.VarChar(3)
   amount              Decimal         @db.Decimal(14, 2)
   paidAt              DateTime?       @map("paid_at") @db.Timestamptz(6)
