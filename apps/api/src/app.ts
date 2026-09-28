@@ -20,7 +20,7 @@ export function createApp() {
   app.use(helmet({
     contentSecurityPolicy: {
       directives: {
-        formAction: ["'self'", new URL(env.PAYMENT_PORTAL_BASE_URL).origin]
+        formAction: ["'self'", new URL(env.PAYMENT_PORTAL_BASE_URL).origin, "https://checkout.paystack.com"]
       }
     }
   }));
