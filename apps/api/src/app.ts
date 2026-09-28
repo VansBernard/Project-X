@@ -17,7 +17,13 @@ import { paymentPortalRouter, paystackRouter, paystackWebhookRouter } from "./mo
 export function createApp() {
   const app = express();
 
-  app.use(helmet());
+  app.use(helmet({
+    contentSecurityPolicy: {
+      directives: {
+        formAction: ["'self'", new URL(env.PAYMENT_PORTAL_BASE_URL).origin]
+      }
+    }
+  }));
   const allowedOrigins = env.WEB_ORIGIN;
 
   app.use(
